@@ -2,6 +2,16 @@
 <html lang="zh-CN">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#ffffff"><title>cemivoAI</title><link rel="stylesheet" href="/screen.css"><script src="/screen.js" defer></script></head>
 <body>
+  <section id="setup" aria-label="连接 API">
+    <form id="setupForm">
+      <h1>cemivoAI</h1><p>连接，然后只留下你的画面。</p>
+      <label for="setupKey">DeepSeek API Key</label>
+      <input id="setupKey" type="password" autocomplete="off" spellcheck="false" placeholder="输入 API Key">
+      <small id="setupHint">密钥仅保存在本次服务内存，不写入磁盘。画面与操作会发送给 API。</small>
+      <button id="setupEnter" type="submit" disabled>正在连接…</button>
+      <p id="setupError" role="status"></p>
+    </form>
+  </section>
   <main id="screen" aria-label="模型生成画面"><img id="image" alt="当前模型生成画面，可左键点击，右键输入" draggable="false" tabindex="0" hidden><p id="empty">正在连接你的画面…</p></main>
   <div id="progress" aria-hidden="true" hidden><i></i></div><span id="pulse" aria-hidden="true" hidden></span>
   <div id="activity" role="status" aria-live="polite" hidden><span id="stage"></span><span id="elapsed" aria-hidden="true"></span></div>

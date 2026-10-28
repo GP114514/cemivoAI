@@ -26,6 +26,7 @@ outputs/
 *.pt
 *.pth
 *.safetensors
+cemivoAI.exe
 neural/data*/
 neural/checkpoints/
 neural/live-snapshot*/

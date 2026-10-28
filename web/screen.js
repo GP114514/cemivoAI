@@ -2,6 +2,8 @@
 (() => {
   const $=id=>document.getElementById(id),image=$("image"),form=$("input"),text=$("text"),send=$("send"),notice=$("notice"),empty=$("empty"),progress=$("progress"),pulse=$("pulse"),activity=$("activity"),stage=$("stage"),elapsed=$("elapsed"),help=$("help"),helpText=$("helpText"),helpLink=$("helpLink");
   const requestKey="cemivoAI.screen.pending",draftKey="cemivoAI.screen.draft",terminal=new Set(["complete","preview","render_failed","partial_failure","needs_input","interrupted"]);
+  let entered=false,configuring=false;
+  const setup=$("setup"),setupForm=$("setupForm"),setupKey=$("setupKey"),setupEnter=$("setupEnter"),setupError=$("setupError"),setupHint=$("setupHint");
   let frame=null,busy=false,polling=false,statusPolling=false,anchor=null,composing=false,uncertain=null,noticeTimer=null,pulseTimer=null,epoch=0,desktopAttempted=false,operation=null,plannerConfigured=null,noticeKind="",disconnected=false;
   function readStored(key){try{return sessionStorage.getItem(key);}catch{return null;}}
   function remember(key,value){try{if(value===null)sessionStorage.removeItem(key);else sessionStorage.setItem(key,value);}catch{/* Storage is optional; this page never resends a pending request. */}}
@@ -11,7 +13,7 @@
   function message(value,persistent=false,kind=""){noticeKind=kind;put(notice,value);notice.hidden=false;clearTimeout(noticeTimer);if(!persistent)noticeTimer=setTimeout(()=>{notice.hidden=true;},5000);}
   function updateHelp(){
     help.hidden=plannerConfigured!==false&&!uncertain&&!disconnected;
-    if(plannerConfigured===false){put(helpText,"连接后，即可点击或输入");put(helpLink,"连接 DeepSeek ↗");helpLink.href="/live#plannerKey";}
+    if(plannerConfigured===false){put(helpText,"连接后，即可点击或输入");put(helpLink,"配置 API");helpLink.href="#configure";}
     else{put(helpText,uncertain?"正在查询上次操作的结果":"正在重新连接");put(helpLink,"打开控制台 ↗");helpLink.href="/live";}
   }
   function seconds(){return operation?Math.max(0,Math.floor((Date.now()-operation.started)/1000)):0;}
@@ -56,6 +58,7 @@
     finally{endOperation();}
   }
   async function sync(){
+    if(!entered)return;
     updateActivity();if(busy){void pollStatus();return;}if(polling)return;polling=true;const stamp=epoch;
     try{
       if(uncertain){try{const saved=await api("/api/agent/request?id="+encodeURIComponent(uncertain));if(terminal.has(saved.status)){uncertain=null;remember(requestKey,null);message(saved.warning||saved.answer||"执行结果已返回");updateHelp();}}catch{message("执行结果仍待确认，正在继续查询；不会自动重复发送。",true);}}
@@ -88,5 +91,20 @@
   text.addEventListener("input",()=>{remember(draftKey,text.value);});text.addEventListener("compositionstart",()=>{composing=true;});text.addEventListener("compositionend",()=>{composing=false;remember(draftKey,text.value);});text.addEventListener("keydown",event=>{if(event.key==="Escape"){form.hidden=true;anchor=null;}if(event.key==="Enter"&&!event.shiftKey&&!event.isComposing&&!composing&&event.keyCode!==229){event.preventDefault();if(!event.repeat)form.requestSubmit();}});
   window.addEventListener("keydown",event=>{if(event.key==="Escape"){form.hidden=true;anchor=null;}});window.addEventListener("online",()=>{void sync();});window.addEventListener("focus",()=>{void sync();});
   if(uncertain){message("正在查询上次操作的结果，不会重复发送。",true);updateHelp();}
-  void sync();setInterval(sync,1000);
+  helpLink.addEventListener("click",event=>{if(plannerConfigured===false){event.preventDefault();entered=false;setup.hidden=false;setupKey.focus();}});
+  async function connection(){
+    try{const status=await api("/api/live/status");plannerConfigured=status.planner?.configured===true;setupEnter.disabled=false;put(setupEnter,plannerConfigured?"进入画面":"连接并进入");if(plannerConfigured)put(setupHint,"API 已在服务内存中配置。可直接进入，或填写新密钥。");put(setupError,"");}
+    catch{setupEnter.disabled=false;put(setupEnter,"重试连接");put(setupError,"暂时无法连接本地服务，请检查 APP 是否已启动。");}
+  }
+  setupForm.addEventListener("submit",async event=>{
+    event.preventDefault();if(configuring)return;configuring=true;setupEnter.disabled=true;put(setupError,"");
+    try{const key=setupKey.value.trim();if(key){await api("/api/live/config",{api_key:key,base_url:"https://api.deepseek.com",model:"deepseek-flash"});plannerConfigured=true;setupKey.value="";}
+      else{const status=await api("/api/live/status");plannerConfigured=status.planner?.configured===true;}
+      if(!plannerConfigured){put(setupError,"请先填写 DeepSeek API Key。");setupKey.focus();return;}
+      entered=true;setup.hidden=true;updateHelp();void sync();
+    }catch(error){put(setupError,error.message||"连接未完成，请重试。");}
+    finally{configuring=false;setupEnter.disabled=false;put(setupEnter,plannerConfigured?"进入画面":"连接并进入");}
+  });
+  window.addEventListener("beforeunload",()=>{setupKey.value="";});
+  void connection();setInterval(sync,1000);
 })();

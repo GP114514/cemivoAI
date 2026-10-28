@@ -44,6 +44,12 @@ Confirmed same-page interactions can reuse a validated local rule and neural edi
 
 ## Quick start
 
+### Minimal Windows app
+
+After installing dependencies and configuring trained model files, run `build-app.ps1` to build `cemivoAI.exe`. Keep the executable in the project folder and double-click it. It opens a 540×580 app window: configure the DeepSeek API first, then enter the generated screen. Existing process-memory credentials can be reused; no API key is saved to disk or browser storage. Saving a key does not verify the provider connection; actual planning reports provider errors. Left-click operates the image; right-click offers text entry and Send. API configuration returns when the service loses its credentials.
+
+The EXE is a small Windows launcher for the local Python service and Edge app window, not a standalone bundle of Python or trained weights. `cemivoAI.cmd` provides the same entry without compilation. Build source is included in `CemivoLauncher.cs`.
+
 Python 3.12 and an NVIDIA CUDA-capable environment were used for development. From the repository root on Windows PowerShell:
 
 ```powershell

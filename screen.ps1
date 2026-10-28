@@ -6,6 +6,7 @@ $taskUrl='http://127.0.0.1:7861/screen'
 try { $taskStatus=Invoke-RestMethod 'http://127.0.0.1:7861/api/status' -TimeoutSec 3 } catch {
     if(Get-NetTCPConnection -LocalPort 7861 -State Listen -ErrorAction SilentlyContinue){throw 'Port 7861 is occupied by an unavailable service.'}
     $env:PYTHONUTF8='1'
+    New-Item -ItemType Directory -Force -Path (Join-Path $taskRoot 'work') | Out-Null
     $taskArgs=@('-u',('"'+(Join-Path $taskRoot 'server.py')+'"'),'--port','7861','--snapshot',('"'+$taskConfig.live_snapshot+'"'))
     $taskServer=Start-Process -FilePath $taskConfig.python -ArgumentList $taskArgs -WorkingDirectory $taskRoot -WindowStyle Hidden -RedirectStandardOutput (Join-Path $taskRoot 'work\screen-server.log') -RedirectStandardError (Join-Path $taskRoot 'work\screen-server-error.log') -PassThru
     $taskStatus=$null
