@@ -22,6 +22,7 @@ from neural.locking import model_access
 from training_control import TrainingControl
 from live_app import LiveApp, LiveError
 from agent_runtime import AgentRuntime
+import console_events
 
 ROOT = Path(__file__).resolve().parent
 CHECKPOINTS = ROOT / "neural" / "checkpoints"
@@ -142,7 +143,7 @@ class Handler(BaseHTTPRequestHandler):
     server_version = "cemivoAI/2.11"
 
     def log_message(self, fmt, *args):
-        if not any(route in str(args) for route in ("/api/status", "/api/training/status", "/api/live/status")):
+        if not any(route in str(args) for route in ("/api/status", "/api/training/status", "/api/live/status", "/api/console")):
             print(f"[{time.strftime('%H:%M:%S')}] {fmt % args}", flush=True)
 
     def send_bytes(self, status, body, content_type, filename=None):
@@ -165,6 +166,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = urlsplit(self.path).path
+        if path == '/api/console':
+            try:
+                cursor=max(0,int(parse_qs(urlsplit(self.path).query).get('after',['0'])[0]))
+            except ValueError:
+                return self.json(422,{'error':'Invalid console cursor'})
+            return self.json(200,console_events.since(cursor))
         if path == "/api/status":
             return self.json(200, self.server.studio.status())
         if path == "/api/training/status":
@@ -244,6 +251,10 @@ class Handler(BaseHTTPRequestHandler):
             if not 0 < length <= 16000:
                 raise ValueError("请求长度不正确。")
             body = json.loads(self.rfile.read(length).decode("utf-8"))
+            if route in ('/api/agent/event','/api/live/event','/api/live/session','/api/live/desktop'):
+                event=body.get('event',{}) if isinstance(body,dict) else {}
+                console_events.emit('INPUT',request=body.get('request_id'),route=route,
+                    text=event.get('text',body.get('prompt','')),position=(event.get('x'),event.get('y')))
             if route == "/api/training/start":
                 result = self.server.studio.training_control.start(body)
             elif route == "/api/training/pause":
@@ -262,12 +273,21 @@ class Handler(BaseHTTPRequestHandler):
                 result = self.server.studio.agent.event(body)
             else:
                 result = self.server.studio.generate(body)
+            if route in ('/api/agent/event','/api/live/event','/api/live/session','/api/live/desktop'):
+                agent=result.get('agent',{});plan=result.get('plan',{})
+                console_events.emit('OUTPUT',request=body.get('request_id'),status=agent.get('status','complete'),
+                    intent=plan.get('intent'),scope=plan.get('update_mode'),answer=agent.get('answer'),
+                    drawing_prompt=result.get('prompt'),warning=agent.get('warning'),timings=result.get('timings'),
+                    tools=[{'name':t.get('name'), 'ok':t.get('ok')} for t in agent.get('tools',[])])
             return self.json(200, result)
         except LiveError as error:
+            console_events.emit('ERROR',route=route,code=error.code,message=str(error))
             return self.json(error.status, {"error": str(error), "code": error.code})
         except (ValueError, UnicodeDecodeError) as error:
+            console_events.emit('ERROR',route=route,message=str(error))
             return self.json(422, {"error": str(error)})
         except RuntimeError as error:
+            console_events.emit('ERROR',route=route,message=str(error))
             return self.json(409, {"error": str(error)})
         except Exception as error:
             traceback.print_exc()

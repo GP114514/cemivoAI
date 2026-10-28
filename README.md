@@ -50,6 +50,8 @@ After installing dependencies and configuring trained model files, run `build-ap
 
 The EXE is a small Windows launcher for the local Python service and Edge app window, not a standalone bundle of Python or trained weights. `cemivoAI.cmd` provides the same entry without compilation. Build source is included in `CemivoLauncher.cs`.
 
+Launching the APP also opens a separate input/output console. It shows submitted text/click coordinates, processing stages, intent summaries, drawing captions, tool status and timing. It does not expose private chain-of-thought or log API configuration bodies. Credential-shaped tokens are redacted. The local console endpoint retains at most 200 summaries in process memory; these are not written to a log file. Closing the console leaves the APP and training running. Summaries can contain your submitted content, so keep the console private. Launch it again with `python console_monitor.py` when needed.
+
 Python 3.12 and an NVIDIA CUDA-capable environment were used for development. From the repository root on Windows PowerShell:
 
 ```powershell

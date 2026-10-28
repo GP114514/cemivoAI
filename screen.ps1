@@ -18,6 +18,7 @@ try { $taskStatus=Invoke-RestMethod 'http://127.0.0.1:7861/api/status' -TimeoutS
     if(-not $taskStatus){throw 'cemivoAI did not start; inspect work/screen-server-error.log.'}
 }
 if($taskStatus.app_id -ne 'cemivoAI.neural'){throw '7861 端口不是 cemivoAI APP。'}
+Start-Process -FilePath $taskConfig.python -ArgumentList @('-u',('"'+(Join-Path $taskRoot 'console_monitor.py')+'"'),'--port','7861') -WorkingDirectory $taskRoot
 $taskUrl += '?v=' + [Uri]::EscapeDataString($taskStatus.version)
 $taskEdge=Join-Path ${env:ProgramFiles(x86)} 'Microsoft\Edge\Application\msedge.exe'
 if(-not(Test-Path -LiteralPath $taskEdge)){throw '未找到 Edge，请在浏览器打开 http://127.0.0.1:7861/screen。'}
