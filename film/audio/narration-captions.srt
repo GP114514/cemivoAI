@@ -1,0 +1,28 @@
+1
+00:00:00,180 --> 00:00:04,332
+I'm building software whose entire interface is driven by AI.
+
+2
+00:00:04,650 --> 00:00:09,834
+Click the image. Add your words. The interface redraws around your intent.
+
+3
+00:00:11,000 --> 00:00:14,816
+These are actual outputs from a model trained from random weights.
+
+4
+00:00:18,200 --> 00:00:22,856
+It reads the whole frame, then chooses a local edit or a full redraw.
+
+5
+00:00:25,200 --> 00:00:30,408
+Here, only the chat changes. Everything outside the edit stays pixel-exact.
+
+6
+00:00:31,100 --> 00:00:35,708
+The agent saved this document, then read it back to verify the result.
+
+7
+00:00:37,100 --> 00:00:41,036
+One screen. Driven by AI. Built around your intent.
+

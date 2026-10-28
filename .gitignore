@@ -1,0 +1,46 @@
+# Credentials and machine configuration
+.env
+.env.*
+!.env.example
+runtime.json
+runtime-*.next
+*.pem
+*.key
+
+# Runtime, user documents, sessions and training artifacts
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+agent-data/
+work/
+samples/
+outputs/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.log
+*.lock
+*.pt
+*.pth
+*.safetensors
+neural/data*/
+neural/checkpoints/
+neural/live-snapshot*/
+neural/*head-v*/
+neural/toggle-head-experiment*/
+neural/reflow-pairs/
+neural/reflow-checkpoints/
+neural/reflow-evaluation/
+
+# Development dependencies and editor state
+node_modules/
+film/renders/encoded-[0-9]*.png
+film/renders/preview-*.png
+film/renders/render-log.txt
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

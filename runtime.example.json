@@ -1,0 +1,5 @@
+{
+  "python": ".venv/Scripts/python.exe",
+  "live_snapshot": "neural/live-snapshot",
+  "toggle_head": "neural/toggle-head-experiment-v1"
+}

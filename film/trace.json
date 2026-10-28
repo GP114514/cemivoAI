@@ -1,0 +1,2295 @@
+{
+  "recorded_at": "2026-10-28T08:44:01.569Z",
+  "version": "2.11.4-experimental",
+  "capture_kind": "real_localhost_requests_and_original_model_PNGs",
+  "desktop_screen_recording": false,
+  "recording_tool_note": "Computer Use stopped because the browser URL could not be verified. No UI automation or alternate browser recorder was used.",
+  "native_size": 256,
+  "model": {
+    "step": 132500,
+    "native_size": 256,
+    "sha256": "3385a09cd9720afd728c153811111abad6cbd07d6658f9b55d12297306709f8e",
+    "source": "neural/checkpoints/inference.pt",
+    "created_at": "2026-10-27T09:53:00.571353+00:00",
+    "random_initialization": true,
+    "pretrained_weights": false,
+    "frozen": true,
+    "quality_verified": false
+  },
+  "training": {
+    "state": "running",
+    "step": 180240
+  },
+  "frames": [
+    {
+      "id": "00-initial",
+      "file": "assets/00-initial.png",
+      "t_ms": 977,
+      "sha256": "5deb0212f0e74037ff6de80a405dff41417d05bcfca1a7ba32414753122cdc0b",
+      "width": 256,
+      "height": 256,
+      "role": "initial",
+      "session_id": "49f1e1e2467e9e76321aeb290df7f1f9",
+      "version": 1
+    },
+    {
+      "id": "01-input",
+      "file": "assets/01-input.png",
+      "t_ms": 5556,
+      "sha256": "5251e86c8e3b45a893dc9eb96af53468abb99f8dc0fd71d610e7af95e3aa72b1",
+      "width": 256,
+      "height": 256,
+      "role": "input",
+      "session_id": "49f1e1e2467e9e76321aeb290df7f1f9",
+      "version": 2
+    },
+    {
+      "id": "02-send",
+      "file": "assets/02-send.png",
+      "t_ms": 11139,
+      "sha256": "ad3a044ff96a966128b4840f9b95c9d0ab261a28a98f3970b0fd35f721fe18d5",
+      "width": 256,
+      "height": 256,
+      "role": "send",
+      "session_id": "49f1e1e2467e9e76321aeb290df7f1f9",
+      "version": 3
+    },
+    {
+      "id": "03-input",
+      "file": "assets/03-input.png",
+      "t_ms": 12326,
+      "sha256": "148682cc76bc4ffaee33f6509ebdd09987dc9b672bf2598d84fbfe66020368cd",
+      "width": 256,
+      "height": 256,
+      "role": "input",
+      "session_id": "49f1e1e2467e9e76321aeb290df7f1f9",
+      "version": 4
+    },
+    {
+      "id": "04-send",
+      "file": "assets/04-send.png",
+      "t_ms": 13455,
+      "sha256": "b49c825a178b05ca8e30748b766e6c8aef2782d7be1bee98a341856061fe5fac",
+      "width": 256,
+      "height": 256,
+      "role": "send",
+      "session_id": "49f1e1e2467e9e76321aeb290df7f1f9",
+      "version": 5
+    },
+    {
+      "id": "05-input",
+      "file": "assets/05-input.png",
+      "t_ms": 14629,
+      "sha256": "cb597f8b015ec7774b5481ace50128cd58d3d5d5abf5733513191ed21fe112d0",
+      "width": 256,
+      "height": 256,
+      "role": "input",
+      "session_id": "49f1e1e2467e9e76321aeb290df7f1f9",
+      "version": 6
+    },
+    {
+      "id": "06-send",
+      "file": "assets/06-send.png",
+      "t_ms": 15770,
+      "sha256": "6e618a923f8235d318aad993d90ca5a25faaf088ffe057f6bcf8c78313636501",
+      "width": 256,
+      "height": 256,
+      "role": "send",
+      "session_id": "49f1e1e2467e9e76321aeb290df7f1f9",
+      "version": 7
+    }
+  ],
+  "operations": [
+    {
+      "id": 0,
+      "name": "input",
+      "text": "Hello AI",
+      "event": {
+        "type": "click",
+        "x": 128,
+        "y": 207,
+        "text": "Hello AI",
+        "input_method": "contextmenu"
+      },
+      "request_id": "film-bbfe41cc-f9b3-4e54-97a2-52064c4f8f07",
+      "t0_ms": 1885,
+      "source_frame_id": "00-initial",
+      "http_ms": 3624.58,
+      "t1_ms": 5510,
+      "output_frame_id": "01-input",
+      "status": "complete",
+      "changed_pixels": 1975,
+      "independent_outside_changed_pixels": 0,
+      "previous_messages_unchanged": true,
+      "local_memory_verified": false,
+      "edit": {
+        "kind": "region",
+        "mode": "local_region",
+        "bounds": [
+          85,
+          180,
+          240,
+          210
+        ],
+        "changed_pixels": 1975,
+        "outside_changed_pixels": 0,
+        "outside_pixels": 60886,
+        "outside_sha256_before": "7cf95cd69a2589f68cc24dafd3b721edd8ceb6e7ea26240f4569194e915ff22e",
+        "outside_sha256_after": "7cf95cd69a2589f68cc24dafd3b721edd8ceb6e7ea26240f4569194e915ff22e",
+        "verified": true,
+        "verification": "outside_pixels_exact",
+        "state_verified": false,
+        "vision_verified": true,
+        "local_memory_verified": false,
+        "verification_source": "fresh_vision",
+        "semantics_guaranteed": false,
+        "preview": false,
+        "preview_reason": null,
+        "generator": "native_neural_text_head",
+        "text_applied": true,
+        "clear_input_bounds": null,
+        "text_bounds": [
+          90,
+          185,
+          200,
+          203
+        ],
+        "clear_placeholder_bounds": null,
+        "replaced_input_bounds": null,
+        "input_ink_grounding": {
+          "expanded": false,
+          "components": [
+            [
+              91,
+              189,
+              101,
+              198
+            ],
+            [
+              103,
+              192,
+              108,
+              198
+            ],
+            [
+              110,
+              192,
+              114,
+              198
+            ],
+            [
+              116,
+              192,
+              120,
+              198
+            ],
+            [
+              122,
+              192,
+              127,
+              198
+            ],
+            [
+              129,
+              192,
+              135,
+              201
+            ],
+            [
+              137,
+              192,
+              142,
+              198
+            ]
+          ],
+          "original_bounds": [
+            90,
+            185,
+            200,
+            203
+          ],
+          "corrected_bounds": [
+            90,
+            185,
+            200,
+            203
+          ],
+          "scope": "pixel geometry only; not OCR or input semantics"
+        },
+        "editor_model": {
+          "available": true,
+          "device": "cpu",
+          "model_sha256": "7a923b01d3acab0d2603c84057762e010103ca3d348d5c656eb71eaacf8a438a",
+          "random_initialization": true,
+          "pretrained_weights": false,
+          "last_error": null,
+          "step": 4000,
+          "parameters": 1441568,
+          "scope": "trained characters and native text cells only"
+        },
+        "text_fallback_reason": null
+      },
+      "plan": {
+        "intent": "Type the literal text \"Hello AI\" into the message composer",
+        "expected_change": "The composer shows \"Hello AI\" as draft text; no message is sent",
+        "state_summary": "CEMIVO 聊天页，消息区为空，输入框为空，右键文本作为字面输入填入输入框",
+        "should_update": true,
+        "next_prompt": "UI draft: Hello AI",
+        "requires_tools": false,
+        "text_action": "input",
+        "input_text": "Hello AI",
+        "text_source": "event",
+        "local_edit": {
+          "kind": "region",
+          "bounds": [
+            85,
+            180,
+            240,
+            210
+          ]
+        },
+        "text_bounds": [
+          90,
+          185,
+          200,
+          203
+        ],
+        "update_mode": "local",
+        "target_type": "other",
+        "scope_reason": "Right-click on the composer is literal text input; only the composer region changes, no send occurs.",
+        "provider": "DeepSeek",
+        "model": "deepseek-flash",
+        "recognition": {
+          "status": "recognized",
+          "message": "已结合完整页面和点击位置识别操作。",
+          "attempts": 1,
+          "full_image_used": true,
+          "focus_used": true,
+          "pixel_assisted": false,
+          "review_error": null,
+          "source": "full_frame+focus"
+        }
+      },
+      "state": {
+        "view": "agent_workspace",
+        "messages": [
+          {
+            "role": "user",
+            "text": "Hello AI"
+          }
+        ],
+        "notice": "Type the literal text \"Hello AI\" into the message composer",
+        "input_text": "Hello AI",
+        "input_bounds": [
+          90,
+          185,
+          200,
+          203
+        ],
+        "composer_bounds": [
+          90,
+          185,
+          200,
+          203
+        ]
+      },
+      "timings": {
+        "sample_ms": 0.86,
+        "load_ms": 0,
+        "encode_ms": 1.17,
+        "verify_ms": 1250.38,
+        "planner_ms": 2336.44,
+        "total_ms": 3600.35
+      },
+      "replay_identical": true
+    },
+    {
+      "id": 1,
+      "name": "send",
+      "text": "Hello AI",
+      "event": {
+        "type": "click",
+        "x": 201,
+        "y": 225,
+        "input_method": "pointer"
+      },
+      "request_id": "film-5ae5acd2-f384-4301-9746-a5acb63271e8",
+      "t0_ms": 6419,
+      "source_frame_id": "01-input",
+      "http_ms": 4552.08,
+      "t1_ms": 10972,
+      "output_frame_id": "02-send",
+      "status": "complete",
+      "changed_pixels": 2960,
+      "independent_outside_changed_pixels": 0,
+      "previous_messages_unchanged": true,
+      "local_memory_verified": false,
+      "edit": {
+        "kind": "regions",
+        "mode": "local_regions",
+        "regions": [
+          [
+            173,
+            213,
+            230,
+            233
+          ],
+          [
+            90,
+            185,
+            200,
+            203
+          ],
+          [
+            90,
+            100,
+            240,
+            180
+          ]
+        ],
+        "bounds": [
+          90,
+          100,
+          240,
+          233
+        ],
+        "trigger_bounds": [
+          173,
+          213,
+          230,
+          233
+        ],
+        "changed_pixels": 2960,
+        "outside_changed_pixels": 0,
+        "outside_pixels": 50416,
+        "edited_pixels": 15120,
+        "verified": true,
+        "verification": "outside_pixels_exact",
+        "state_verified": false,
+        "outside_sha256_before": "0d545a99d20c262152e400cfd513c4f1961307c8f767cf51c5f069e8872d4ef3",
+        "outside_sha256_after": "0d545a99d20c262152e400cfd513c4f1961307c8f767cf51c5f069e8872d4ef3",
+        "vision_verified": true,
+        "local_memory_verified": false,
+        "verification_source": "fresh_vision",
+        "semantics_guaranteed": false,
+        "preview": false,
+        "preview_reason": null,
+        "generator": "native_neural_text_head",
+        "text_applied": true,
+        "clear_input_bounds": [
+          90,
+          185,
+          200,
+          203
+        ],
+        "text_bounds": [
+          90,
+          100,
+          240,
+          118
+        ],
+        "clear_placeholder_bounds": [
+          118,
+          100,
+          212,
+          118
+        ],
+        "replaced_input_bounds": null,
+        "input_ink_grounding": null,
+        "editor_model": {
+          "available": true,
+          "device": "cpu",
+          "model_sha256": "7a923b01d3acab0d2603c84057762e010103ca3d348d5c656eb71eaacf8a438a",
+          "random_initialization": true,
+          "pretrained_weights": false,
+          "last_error": null,
+          "step": 4000,
+          "parameters": 1441568,
+          "scope": "trained characters and native text cells only"
+        },
+        "text_fallback_reason": null
+      },
+      "plan": {
+        "intent": "Send the typed draft \"Hello AI\" in the CEMIVO chat",
+        "expected_change": "The message \"Hello AI\" appears in the conversation area and the composer is cleared",
+        "state_summary": "CEMIVO 聊天页，输入框已有 Hello AI，点击 Send 发送并清空输入框",
+        "should_update": true,
+        "next_prompt": "Black and white chat screen, title CEMIVO, message 'Hello AI' shown in conversation, empty input, Send button.",
+        "requires_tools": false,
+        "text_action": "send",
+        "input_text": "Hello AI",
+        "text_source": "draft",
+        "local_edit": {
+          "kind": "regions",
+          "regions": [
+            [
+              173,
+              213,
+              230,
+              233
+            ],
+            [
+              90,
+              185,
+              200,
+              203
+            ],
+            [
+              90,
+              100,
+              240,
+              180
+            ]
+          ],
+          "trigger_bounds": [
+            173,
+            213,
+            230,
+            233
+          ]
+        },
+        "empty_hint_checked": true,
+        "empty_hint_present": true,
+        "text_bounds": [
+          90,
+          100,
+          240,
+          118
+        ],
+        "clear_input_bounds": [
+          90,
+          185,
+          200,
+          203
+        ],
+        "clear_placeholder_bounds": [
+          118,
+          100,
+          212,
+          118
+        ],
+        "message_area_bounds": [
+          90,
+          100,
+          240,
+          180
+        ],
+        "update_mode": "local",
+        "target_type": "other",
+        "scope_reason": "Send click affects the composer and message area only; header, sidebar and title stay unchanged.",
+        "provider": "DeepSeek",
+        "model": "deepseek-flash",
+        "empty_hint_evidence": {
+          "source": "existing AI plan",
+          "full_image_used": true,
+          "image_sha256": "5251e86c8e3b45a893dc9eb96af53468abb99f8dc0fd71d610e7af95e3aa72b1",
+          "bounds": [
+            118,
+            100,
+            212,
+            118
+          ],
+          "semantic_certainty": "AI report; bounded geometry only"
+        },
+        "recognition": {
+          "status": "recognized",
+          "message": "已结合完整页面和点击位置识别操作。",
+          "attempts": 1,
+          "full_image_used": true,
+          "focus_used": true,
+          "pixel_assisted": false,
+          "review_error": null,
+          "source": "full_frame+focus"
+        }
+      },
+      "state": {
+        "view": "agent_workspace",
+        "messages": [
+          {
+            "role": "user",
+            "text": "Hello AI"
+          }
+        ],
+        "notice": "Send the typed draft \"Hello AI\" in the CEMIVO chat",
+        "input_text": "",
+        "composer_bounds": [
+          90,
+          185,
+          200,
+          203
+        ],
+        "last_submitted_text": "Hello AI",
+        "sent_messages": [
+          "Hello AI"
+        ],
+        "sent_message_bounds": [
+          [
+            90,
+            100,
+            240,
+            118
+          ]
+        ]
+      },
+      "timings": {
+        "sample_ms": 1.6099999999999999,
+        "load_ms": 0,
+        "encode_ms": 2.97,
+        "verify_ms": 2076.57,
+        "planner_ms": 2449.27,
+        "total_ms": 4533.33
+      },
+      "replay_identical": true
+    },
+    {
+      "id": 2,
+      "name": "input",
+      "text": "One screen",
+      "event": {
+        "type": "click",
+        "x": 145,
+        "y": 194,
+        "text": "One screen",
+        "input_method": "contextmenu"
+      },
+      "request_id": "film-7d35b26c-5a53-4f75-8f07-5d834cdb15c1",
+      "t0_ms": 12060,
+      "source_frame_id": "02-send",
+      "http_ms": 42.56,
+      "t1_ms": 12104,
+      "output_frame_id": "03-input",
+      "status": "complete",
+      "changed_pixels": 359,
+      "independent_outside_changed_pixels": 0,
+      "previous_messages_unchanged": true,
+      "local_memory_verified": true,
+      "edit": {
+        "kind": "regions",
+        "mode": "local_regions",
+        "regions": [
+          [
+            90,
+            185,
+            200,
+            203
+          ]
+        ],
+        "bounds": [
+          90,
+          185,
+          200,
+          203
+        ],
+        "trigger_bounds": [
+          85,
+          180,
+          240,
+          210
+        ],
+        "changed_pixels": 359,
+        "outside_changed_pixels": 0,
+        "outside_pixels": 63556,
+        "edited_pixels": 1980,
+        "verified": true,
+        "verification": "outside_pixels_exact",
+        "state_verified": false,
+        "outside_sha256_before": "18739a470789cbda304a837c384d78d732faca10d02d61451683245ee30918cc",
+        "outside_sha256_after": "18739a470789cbda304a837c384d78d732faca10d02d61451683245ee30918cc",
+        "vision_verified": false,
+        "local_memory_verified": true,
+        "verification_source": "AI-origin-policy+full_image_hash+neural_text",
+        "semantics_guaranteed": false,
+        "preview": false,
+        "preview_reason": null,
+        "generator": "native_neural_text_head",
+        "text_applied": true,
+        "clear_input_bounds": null,
+        "text_bounds": [
+          90,
+          185,
+          200,
+          203
+        ],
+        "clear_placeholder_bounds": null,
+        "replaced_input_bounds": null,
+        "input_ink_grounding": {
+          "expanded": false,
+          "components": [],
+          "original_bounds": [
+            90,
+            185,
+            200,
+            203
+          ],
+          "corrected_bounds": [
+            90,
+            185,
+            200,
+            203
+          ],
+          "scope": "pixel geometry only; not OCR or input semantics"
+        },
+        "editor_model": {
+          "available": true,
+          "device": "cpu",
+          "model_sha256": "7a923b01d3acab0d2603c84057762e010103ca3d348d5c656eb71eaacf8a438a",
+          "random_initialization": true,
+          "pretrained_weights": false,
+          "last_error": null,
+          "step": 4000,
+          "parameters": 1441568,
+          "scope": "trained characters and native text cells only"
+        },
+        "text_fallback_reason": null
+      },
+      "plan": {
+        "intent": "输入文字",
+        "expected_change": "已更新文字，其他区域保持不变。",
+        "state_summary": "Confirmed page text interaction",
+        "should_update": true,
+        "next_prompt": "Chat draft: One screen",
+        "requires_tools": false,
+        "text_action": "input",
+        "input_text": "One screen",
+        "text_source": "event",
+        "local_edit": {
+          "kind": "regions",
+          "regions": [
+            [
+              90,
+              185,
+              200,
+              203
+            ]
+          ],
+          "trigger_bounds": [
+            85,
+            180,
+            240,
+            210
+          ]
+        },
+        "text_bounds": [
+          90,
+          185,
+          200,
+          203
+        ],
+        "update_mode": "local",
+        "target_type": "other",
+        "scope_reason": "Reuse the AI-observed text policy on the identical complete frame",
+        "provider": "Local confirmed AI policy",
+        "model": "neural_text_head",
+        "visual_intent_memory": {
+          "full_image_hash_check": true,
+          "policy_source": "AI-origin-policy",
+          "pixel_generator": "neural_text",
+          "fresh_vision": false
+        },
+        "recognition": {
+          "status": "recognized",
+          "source": "confirmed_full_frame_hash",
+          "attempts": 0,
+          "full_image_used": false,
+          "full_image_hash_checked": true,
+          "focus_used": false,
+          "message": "复用本页已确认的操作，已核对完整画面与当前状态。"
+        },
+        "_visual_intent_proof": "6c19a28f6f6d6bd8f01fe36f96ac21a70de6fe1ac72bdebbd6e79344706bf5c7"
+      },
+      "state": {
+        "view": "agent_workspace",
+        "messages": [
+          {
+            "role": "user",
+            "text": "Hello AI"
+          },
+          {
+            "role": "user",
+            "text": "One screen"
+          }
+        ],
+        "notice": "输入文字",
+        "input_text": "One screen",
+        "composer_bounds": [
+          90,
+          185,
+          200,
+          203
+        ],
+        "last_submitted_text": "Hello AI",
+        "sent_messages": [
+          "Hello AI"
+        ],
+        "sent_message_bounds": [
+          [
+            90,
+            100,
+            240,
+            118
+          ]
+        ],
+        "input_bounds": [
+          90,
+          185,
+          200,
+          203
+        ]
+      },
+      "timings": {
+        "sample_ms": 0.8,
+        "load_ms": 0,
+        "encode_ms": 1.07,
+        "verify_ms": 0.28,
+        "planner_ms": 13.82,
+        "total_ms": 26.72
+      },
+      "replay_identical": true
+    },
+    {
+      "id": 3,
+      "name": "send",
+      "text": "One screen",
+      "event": {
+        "type": "click",
+        "x": 201,
+        "y": 223,
+        "input_method": "pointer"
+      },
+      "request_id": "film-d3d7c190-f94f-4765-a673-70b8f8f13a2b",
+      "t0_ms": 13188,
+      "source_frame_id": "03-input",
+      "http_ms": 37,
+      "t1_ms": 13226,
+      "output_frame_id": "04-send",
+      "status": "complete",
+      "changed_pixels": 3045,
+      "independent_outside_changed_pixels": 0,
+      "previous_messages_unchanged": true,
+      "local_memory_verified": true,
+      "edit": {
+        "kind": "regions",
+        "mode": "local_regions",
+        "regions": [
+          [
+            90,
+            120,
+            240,
+            138
+          ],
+          [
+            90,
+            185,
+            200,
+            203
+          ]
+        ],
+        "bounds": [
+          90,
+          120,
+          240,
+          203
+        ],
+        "trigger_bounds": [
+          173,
+          213,
+          230,
+          233
+        ],
+        "changed_pixels": 3045,
+        "outside_changed_pixels": 0,
+        "outside_pixels": 60856,
+        "edited_pixels": 4680,
+        "verified": true,
+        "verification": "outside_pixels_exact",
+        "state_verified": false,
+        "outside_sha256_before": "45485851294782ee9e9991a62c25ca54afd18c320f4af192d1862f88b9e0fc33",
+        "outside_sha256_after": "45485851294782ee9e9991a62c25ca54afd18c320f4af192d1862f88b9e0fc33",
+        "vision_verified": false,
+        "local_memory_verified": true,
+        "verification_source": "AI-origin-policy+full_image_hash+neural_text",
+        "semantics_guaranteed": false,
+        "preview": false,
+        "preview_reason": null,
+        "generator": "native_neural_text_head",
+        "text_applied": true,
+        "clear_input_bounds": [
+          90,
+          185,
+          200,
+          203
+        ],
+        "text_bounds": [
+          90,
+          120,
+          240,
+          138
+        ],
+        "clear_placeholder_bounds": null,
+        "replaced_input_bounds": null,
+        "input_ink_grounding": null,
+        "editor_model": {
+          "available": true,
+          "device": "cpu",
+          "model_sha256": "7a923b01d3acab0d2603c84057762e010103ca3d348d5c656eb71eaacf8a438a",
+          "random_initialization": true,
+          "pretrained_weights": false,
+          "last_error": null,
+          "step": 4000,
+          "parameters": 1441568,
+          "scope": "trained characters and native text cells only"
+        },
+        "text_fallback_reason": null
+      },
+      "plan": {
+        "intent": "发送当前草稿",
+        "expected_change": "已更新文字，其他区域保持不变。",
+        "state_summary": "Confirmed page text interaction",
+        "should_update": true,
+        "next_prompt": "Chat message: One screen",
+        "requires_tools": false,
+        "text_action": "send",
+        "input_text": "One screen",
+        "text_source": "draft",
+        "local_edit": {
+          "kind": "regions",
+          "regions": [
+            [
+              90,
+              120,
+              240,
+              138
+            ],
+            [
+              90,
+              185,
+              200,
+              203
+            ]
+          ],
+          "trigger_bounds": [
+            173,
+            213,
+            230,
+            233
+          ]
+        },
+        "text_bounds": [
+          90,
+          120,
+          240,
+          138
+        ],
+        "clear_input_bounds": [
+          90,
+          185,
+          200,
+          203
+        ],
+        "update_mode": "local",
+        "target_type": "other",
+        "scope_reason": "Reuse the AI-observed text policy on the identical complete frame",
+        "provider": "Local confirmed AI policy",
+        "model": "neural_text_head",
+        "visual_intent_memory": {
+          "full_image_hash_check": true,
+          "policy_source": "AI-origin-policy",
+          "pixel_generator": "neural_text",
+          "fresh_vision": false
+        },
+        "recognition": {
+          "status": "recognized",
+          "source": "confirmed_full_frame_hash",
+          "attempts": 0,
+          "full_image_used": false,
+          "full_image_hash_checked": true,
+          "focus_used": false,
+          "message": "复用本页已确认的操作，已核对完整画面与当前状态。"
+        },
+        "_visual_intent_proof": "b6a6793832fb0cc1bcf33c7be80f0f39d2de939c969cc3be58b76144ec99de6c"
+      },
+      "state": {
+        "view": "agent_workspace",
+        "messages": [
+          {
+            "role": "user",
+            "text": "Hello AI"
+          },
+          {
+            "role": "user",
+            "text": "One screen"
+          }
+        ],
+        "notice": "发送当前草稿",
+        "input_text": "",
+        "composer_bounds": [
+          90,
+          185,
+          200,
+          203
+        ],
+        "last_submitted_text": "One screen",
+        "sent_messages": [
+          "Hello AI",
+          "One screen"
+        ],
+        "sent_message_bounds": [
+          [
+            90,
+            100,
+            240,
+            118
+          ],
+          [
+            90,
+            120,
+            240,
+            138
+          ]
+        ]
+      },
+      "timings": {
+        "sample_ms": 1.42,
+        "load_ms": 0,
+        "encode_ms": 2.1900000000000004,
+        "verify_ms": 0.28,
+        "planner_ms": 13.59,
+        "total_ms": 20.32
+      },
+      "replay_identical": true
+    },
+    {
+      "id": 4,
+      "name": "input",
+      "text": "One intent",
+      "event": {
+        "type": "click",
+        "x": 145,
+        "y": 194,
+        "text": "One intent",
+        "input_method": "contextmenu"
+      },
+      "request_id": "film-c47e078d-6ca9-4b98-a7e7-7b5dd20a79de",
+      "t0_ms": 14365,
+      "source_frame_id": "04-send",
+      "http_ms": 45.4,
+      "t1_ms": 14411,
+      "output_frame_id": "05-input",
+      "status": "complete",
+      "changed_pixels": 352,
+      "independent_outside_changed_pixels": 0,
+      "previous_messages_unchanged": true,
+      "local_memory_verified": true,
+      "edit": {
+        "kind": "regions",
+        "mode": "local_regions",
+        "regions": [
+          [
+            90,
+            185,
+            200,
+            203
+          ]
+        ],
+        "bounds": [
+          90,
+          185,
+          200,
+          203
+        ],
+        "trigger_bounds": [
+          85,
+          180,
+          240,
+          210
+        ],
+        "changed_pixels": 352,
+        "outside_changed_pixels": 0,
+        "outside_pixels": 63556,
+        "edited_pixels": 1980,
+        "verified": true,
+        "verification": "outside_pixels_exact",
+        "state_verified": false,
+        "outside_sha256_before": "edd0c7a6a01b3ec0b2c9ca75011322470ffbab4f3ad4c76453ae3848c0b1f206",
+        "outside_sha256_after": "edd0c7a6a01b3ec0b2c9ca75011322470ffbab4f3ad4c76453ae3848c0b1f206",
+        "vision_verified": false,
+        "local_memory_verified": true,
+        "verification_source": "AI-origin-policy+full_image_hash+neural_text",
+        "semantics_guaranteed": false,
+        "preview": false,
+        "preview_reason": null,
+        "generator": "native_neural_text_head",
+        "text_applied": true,
+        "clear_input_bounds": null,
+        "text_bounds": [
+          90,
+          185,
+          200,
+          203
+        ],
+        "clear_placeholder_bounds": null,
+        "replaced_input_bounds": null,
+        "input_ink_grounding": {
+          "expanded": false,
+          "components": [],
+          "original_bounds": [
+            90,
+            185,
+            200,
+            203
+          ],
+          "corrected_bounds": [
+            90,
+            185,
+            200,
+            203
+          ],
+          "scope": "pixel geometry only; not OCR or input semantics"
+        },
+        "editor_model": {
+          "available": true,
+          "device": "cpu",
+          "model_sha256": "7a923b01d3acab0d2603c84057762e010103ca3d348d5c656eb71eaacf8a438a",
+          "random_initialization": true,
+          "pretrained_weights": false,
+          "last_error": null,
+          "step": 4000,
+          "parameters": 1441568,
+          "scope": "trained characters and native text cells only"
+        },
+        "text_fallback_reason": null
+      },
+      "plan": {
+        "intent": "输入文字",
+        "expected_change": "已更新文字，其他区域保持不变。",
+        "state_summary": "Confirmed page text interaction",
+        "should_update": true,
+        "next_prompt": "Chat draft: One intent",
+        "requires_tools": false,
+        "text_action": "input",
+        "input_text": "One intent",
+        "text_source": "event",
+        "local_edit": {
+          "kind": "regions",
+          "regions": [
+            [
+              90,
+              185,
+              200,
+              203
+            ]
+          ],
+          "trigger_bounds": [
+            85,
+            180,
+            240,
+            210
+          ]
+        },
+        "text_bounds": [
+          90,
+          185,
+          200,
+          203
+        ],
+        "update_mode": "local",
+        "target_type": "other",
+        "scope_reason": "Reuse the AI-observed text policy on the identical complete frame",
+        "provider": "Local confirmed AI policy",
+        "model": "neural_text_head",
+        "visual_intent_memory": {
+          "full_image_hash_check": true,
+          "policy_source": "AI-origin-policy",
+          "pixel_generator": "neural_text",
+          "fresh_vision": false
+        },
+        "recognition": {
+          "status": "recognized",
+          "source": "confirmed_full_frame_hash",
+          "attempts": 0,
+          "full_image_used": false,
+          "full_image_hash_checked": true,
+          "focus_used": false,
+          "message": "复用本页已确认的操作，已核对完整画面与当前状态。"
+        },
+        "_visual_intent_proof": "0513be28992314cc0eb8ea196324c80b8ba5c86e801c2d991aa9e1aa6a519a37"
+      },
+      "state": {
+        "view": "agent_workspace",
+        "messages": [
+          {
+            "role": "user",
+            "text": "Hello AI"
+          },
+          {
+            "role": "user",
+            "text": "One screen"
+          },
+          {
+            "role": "user",
+            "text": "One intent"
+          }
+        ],
+        "notice": "输入文字",
+        "input_text": "One intent",
+        "composer_bounds": [
+          90,
+          185,
+          200,
+          203
+        ],
+        "last_submitted_text": "One screen",
+        "sent_messages": [
+          "Hello AI",
+          "One screen"
+        ],
+        "sent_message_bounds": [
+          [
+            90,
+            100,
+            240,
+            118
+          ],
+          [
+            90,
+            120,
+            240,
+            138
+          ]
+        ],
+        "input_bounds": [
+          90,
+          185,
+          200,
+          203
+        ]
+      },
+      "timings": {
+        "sample_ms": 0.96,
+        "load_ms": 0,
+        "encode_ms": 1.11,
+        "verify_ms": 0.29,
+        "planner_ms": 13.45,
+        "total_ms": 27.71
+      },
+      "replay_identical": true
+    },
+    {
+      "id": 5,
+      "name": "send",
+      "text": "One intent",
+      "event": {
+        "type": "click",
+        "x": 201,
+        "y": 223,
+        "input_method": "pointer"
+      },
+      "request_id": "film-3536a4f7-9d97-495b-af29-fdd850f63ea4",
+      "t0_ms": 15503,
+      "source_frame_id": "05-input",
+      "http_ms": 37.51,
+      "t1_ms": 15542,
+      "output_frame_id": "06-send",
+      "status": "complete",
+      "changed_pixels": 3039,
+      "independent_outside_changed_pixels": 0,
+      "previous_messages_unchanged": true,
+      "local_memory_verified": true,
+      "edit": {
+        "kind": "regions",
+        "mode": "local_regions",
+        "regions": [
+          [
+            90,
+            140,
+            240,
+            158
+          ],
+          [
+            90,
+            185,
+            200,
+            203
+          ]
+        ],
+        "bounds": [
+          90,
+          140,
+          240,
+          203
+        ],
+        "trigger_bounds": [
+          173,
+          213,
+          230,
+          233
+        ],
+        "changed_pixels": 3039,
+        "outside_changed_pixels": 0,
+        "outside_pixels": 60856,
+        "edited_pixels": 4680,
+        "verified": true,
+        "verification": "outside_pixels_exact",
+        "state_verified": false,
+        "outside_sha256_before": "5a84b3ab0912b6ba54e435334464517545fc8ac4e1adab6de146f63887dee42d",
+        "outside_sha256_after": "5a84b3ab0912b6ba54e435334464517545fc8ac4e1adab6de146f63887dee42d",
+        "vision_verified": false,
+        "local_memory_verified": true,
+        "verification_source": "AI-origin-policy+full_image_hash+neural_text",
+        "semantics_guaranteed": false,
+        "preview": false,
+        "preview_reason": null,
+        "generator": "native_neural_text_head",
+        "text_applied": true,
+        "clear_input_bounds": [
+          90,
+          185,
+          200,
+          203
+        ],
+        "text_bounds": [
+          90,
+          140,
+          240,
+          158
+        ],
+        "clear_placeholder_bounds": null,
+        "replaced_input_bounds": null,
+        "input_ink_grounding": null,
+        "editor_model": {
+          "available": true,
+          "device": "cpu",
+          "model_sha256": "7a923b01d3acab0d2603c84057762e010103ca3d348d5c656eb71eaacf8a438a",
+          "random_initialization": true,
+          "pretrained_weights": false,
+          "last_error": null,
+          "step": 4000,
+          "parameters": 1441568,
+          "scope": "trained characters and native text cells only"
+        },
+        "text_fallback_reason": null
+      },
+      "plan": {
+        "intent": "发送当前草稿",
+        "expected_change": "已更新文字，其他区域保持不变。",
+        "state_summary": "Confirmed page text interaction",
+        "should_update": true,
+        "next_prompt": "Chat message: One intent",
+        "requires_tools": false,
+        "text_action": "send",
+        "input_text": "One intent",
+        "text_source": "draft",
+        "local_edit": {
+          "kind": "regions",
+          "regions": [
+            [
+              90,
+              140,
+              240,
+              158
+            ],
+            [
+              90,
+              185,
+              200,
+              203
+            ]
+          ],
+          "trigger_bounds": [
+            173,
+            213,
+            230,
+            233
+          ]
+        },
+        "text_bounds": [
+          90,
+          140,
+          240,
+          158
+        ],
+        "clear_input_bounds": [
+          90,
+          185,
+          200,
+          203
+        ],
+        "update_mode": "local",
+        "target_type": "other",
+        "scope_reason": "Reuse the AI-observed text policy on the identical complete frame",
+        "provider": "Local confirmed AI policy",
+        "model": "neural_text_head",
+        "visual_intent_memory": {
+          "full_image_hash_check": true,
+          "policy_source": "AI-origin-policy",
+          "pixel_generator": "neural_text",
+          "fresh_vision": false
+        },
+        "recognition": {
+          "status": "recognized",
+          "source": "confirmed_full_frame_hash",
+          "attempts": 0,
+          "full_image_used": false,
+          "full_image_hash_checked": true,
+          "focus_used": false,
+          "message": "复用本页已确认的操作，已核对完整画面与当前状态。"
+        },
+        "_visual_intent_proof": "9291ef1112de72d7ed63e0cbd6ab80aff0e39599448d38b98b50a2515d643867"
+      },
+      "state": {
+        "view": "agent_workspace",
+        "messages": [
+          {
+            "role": "user",
+            "text": "Hello AI"
+          },
+          {
+            "role": "user",
+            "text": "One screen"
+          },
+          {
+            "role": "user",
+            "text": "One intent"
+          }
+        ],
+        "notice": "发送当前草稿",
+        "input_text": "",
+        "composer_bounds": [
+          90,
+          185,
+          200,
+          203
+        ],
+        "last_submitted_text": "One intent",
+        "sent_messages": [
+          "Hello AI",
+          "One screen",
+          "One intent"
+        ],
+        "sent_message_bounds": [
+          [
+            90,
+            100,
+            240,
+            118
+          ],
+          [
+            90,
+            120,
+            240,
+            138
+          ],
+          [
+            90,
+            140,
+            240,
+            158
+          ]
+        ]
+      },
+      "timings": {
+        "sample_ms": 1.31,
+        "load_ms": 0,
+        "encode_ms": 2.01,
+        "verify_ms": 0.28,
+        "planner_ms": 13.11,
+        "total_ms": 20.37
+      },
+      "replay_identical": true
+    }
+  ],
+  "phases": [
+    {
+      "t_ms": 1890,
+      "stage": "idle",
+      "busy": true,
+      "operation": 0
+    },
+    {
+      "t_ms": 2149,
+      "stage": "understanding",
+      "busy": true,
+      "operation": 0
+    },
+    {
+      "t_ms": 2411,
+      "stage": "understanding",
+      "busy": true,
+      "operation": 0
+    },
+    {
+      "t_ms": 2673,
+      "stage": "understanding",
+      "busy": true,
+      "operation": 0
+    },
+    {
+      "t_ms": 2935,
+      "stage": "understanding",
+      "busy": true,
+      "operation": 0
+    },
+    {
+      "t_ms": 3198,
+      "stage": "understanding",
+      "busy": true,
+      "operation": 0
+    },
+    {
+      "t_ms": 3460,
+      "stage": "understanding",
+      "busy": true,
+      "operation": 0
+    },
+    {
+      "t_ms": 3722,
+      "stage": "understanding",
+      "busy": true,
+      "operation": 0
+    },
+    {
+      "t_ms": 3990,
+      "stage": "understanding",
+      "busy": true,
+      "operation": 0
+    },
+    {
+      "t_ms": 4251,
+      "stage": "drawing",
+      "busy": true,
+      "operation": 0
+    },
+    {
+      "t_ms": 4508,
+      "stage": "drawing",
+      "busy": true,
+      "operation": 0
+    },
+    {
+      "t_ms": 4771,
+      "stage": "drawing",
+      "busy": true,
+      "operation": 0
+    },
+    {
+      "t_ms": 5033,
+      "stage": "drawing",
+      "busy": true,
+      "operation": 0
+    },
+    {
+      "t_ms": 5295,
+      "stage": "drawing",
+      "busy": true,
+      "operation": 0
+    },
+    {
+      "t_ms": 6424,
+      "stage": "idle",
+      "busy": true,
+      "operation": 1
+    },
+    {
+      "t_ms": 6685,
+      "stage": "understanding",
+      "busy": true,
+      "operation": 1
+    },
+    {
+      "t_ms": 6947,
+      "stage": "understanding",
+      "busy": true,
+      "operation": 1
+    },
+    {
+      "t_ms": 7209,
+      "stage": "understanding",
+      "busy": true,
+      "operation": 1
+    },
+    {
+      "t_ms": 7470,
+      "stage": "understanding",
+      "busy": true,
+      "operation": 1
+    },
+    {
+      "t_ms": 7733,
+      "stage": "understanding",
+      "busy": true,
+      "operation": 1
+    },
+    {
+      "t_ms": 7994,
+      "stage": "understanding",
+      "busy": true,
+      "operation": 1
+    },
+    {
+      "t_ms": 8256,
+      "stage": "understanding",
+      "busy": true,
+      "operation": 1
+    },
+    {
+      "t_ms": 8517,
+      "stage": "understanding",
+      "busy": true,
+      "operation": 1
+    },
+    {
+      "t_ms": 8780,
+      "stage": "understanding",
+      "busy": true,
+      "operation": 1
+    },
+    {
+      "t_ms": 9043,
+      "stage": "drawing",
+      "busy": true,
+      "operation": 1
+    },
+    {
+      "t_ms": 9304,
+      "stage": "drawing",
+      "busy": true,
+      "operation": 1
+    },
+    {
+      "t_ms": 9566,
+      "stage": "drawing",
+      "busy": true,
+      "operation": 1
+    },
+    {
+      "t_ms": 9828,
+      "stage": "drawing",
+      "busy": true,
+      "operation": 1
+    },
+    {
+      "t_ms": 10090,
+      "stage": "drawing",
+      "busy": true,
+      "operation": 1
+    },
+    {
+      "t_ms": 10352,
+      "stage": "drawing",
+      "busy": true,
+      "operation": 1
+    },
+    {
+      "t_ms": 10614,
+      "stage": "drawing",
+      "busy": true,
+      "operation": 1
+    },
+    {
+      "t_ms": 10877,
+      "stage": "drawing",
+      "busy": true,
+      "operation": 1
+    },
+    {
+      "t_ms": 12065,
+      "stage": "idle",
+      "busy": true,
+      "operation": 2
+    },
+    {
+      "t_ms": 13197,
+      "stage": "idle",
+      "busy": true,
+      "operation": 3
+    },
+    {
+      "t_ms": 14369,
+      "stage": "idle",
+      "busy": true,
+      "operation": 4
+    },
+    {
+      "t_ms": 15508,
+      "stage": "idle",
+      "busy": true,
+      "operation": 5
+    }
+  ],
+  "complete": true,
+  "whole_app_quality_accepted": false,
+  "initial_frame": {
+    "image_url": "/api/live/images/001d97d24101f1f53e5817e1d11976a0.png",
+    "width": 256,
+    "height": 256,
+    "prompt": "Black and white chat screen, title CEMIVO, empty messages, empty input, Send.",
+    "seed": 43,
+    "steps": 8,
+    "checkpoint_step": 132500,
+    "sha256": "5deb0212f0e74037ff6de80a405dff41417d05bcfca1a7ba32414753122cdc0b",
+    "model_sha256": "3385a09cd9720afd728c153811111abad6cbd07d6658f9b55d12297306709f8e",
+    "timings": {
+      "sample_ms": 902.67,
+      "load_ms": 0,
+      "planner_ms": 0,
+      "total_ms": 969.07
+    },
+    "experimental": true,
+    "generator": "pixel_flow",
+    "screen_check": {
+      "checked": true,
+      "expected_screen": "chat",
+      "passed": true,
+      "unexpected_toggles": [],
+      "scope": "measurable switches only; does not certify text or all layout details",
+      "repair_attempts": 1,
+      "rejected": {
+        "prompt": "Black and white chat screen, title CEMIVO, empty messages, empty input, Send.",
+        "unexpected_toggles": [
+          {
+            "bounds": [
+              17,
+              15,
+              39,
+              26
+            ],
+            "state": "on"
+          }
+        ]
+      }
+    },
+    "surface_model": {
+      "available": true,
+      "device": "cpu",
+      "sha256": "9bb4eace45f9dfa006f7147ca99b401056efecd41bb5c84048b56e966e5b9a7f",
+      "model_sha256": "aeb40b83967983c4cf0740ec1db6ef1ccfd31f6940f4634b0b09172676365637",
+      "checkpoint_step": 3000,
+      "parameters": 4825,
+      "random_initialization": true,
+      "pretrained_weights": false,
+      "font_or_bitmap_assets_at_inference": false,
+      "last_error": null,
+      "scope": "auxiliary neural desktop and navigation surfaces",
+      "width": 256,
+      "height": 256,
+      "seed": 43,
+      "steps": 1,
+      "prompt": "Neural navigation",
+      "model": {
+        "available": true,
+        "device": "cpu",
+        "sha256": "aeb40b83967983c4cf0740ec1db6ef1ccfd31f6940f4634b0b09172676365637",
+        "model_sha256": "aeb40b83967983c4cf0740ec1db6ef1ccfd31f6940f4634b0b09172676365637",
+        "checkpoint_step": 3000,
+        "parameters": 4825,
+        "random_initialization": true,
+        "pretrained_weights": false,
+        "font_or_bitmap_assets_at_inference": false,
+        "last_error": null,
+        "scope": "auxiliary neural desktop and navigation surfaces",
+        "name": "cemivo-neural-surface",
+        "step": 3000,
+        "text_model_sha256": "7a923b01d3acab0d2603c84057762e010103ca3d348d5c656eb71eaacf8a438a",
+        "text_parameters": 1441568,
+        "provenance": {
+          "random_initialization": true,
+          "pretrained_weights": false,
+          "font_or_bitmap_assets_at_inference": false,
+          "layout": "learned conditional layout head",
+          "button_pixels": "learned coordinate pixel MLP",
+          "text_pixels": "trained neural glyph decoder",
+          "auxiliary_to_main_pixel_flow": true
+        }
+      },
+      "surface": {
+        "mode": "chrome",
+        "bounds": {
+          "title": [
+            137,
+            4,
+            252,
+            25
+          ],
+          "home": [
+            5,
+            2,
+            65,
+            28
+          ],
+          "back": [
+            71,
+            2,
+            131,
+            28
+          ]
+        },
+        "text_bounds": {
+          "title": [
+            167,
+            5,
+            221,
+            23
+          ],
+          "home": [
+            19,
+            6,
+            51,
+            24
+          ],
+          "back": [
+            85,
+            6,
+            117,
+            24
+          ]
+        },
+        "click_routing": "AI screenshot interpretation only"
+      },
+      "timings": {
+        "load_ms": 0.04,
+        "sample_ms": 33.99,
+        "total_ms": 34.51
+      },
+      "step": 3000
+    },
+    "surface_chrome": {
+      "bounds": [
+        0,
+        0,
+        256,
+        32
+      ],
+      "generator": "native_neural_surface",
+      "main_png_sha256": "0515414b52896d13cf1fbafc156d23eab37e2be7bca3c32220d2311bbd74aad8",
+      "outside_changed_pixels": 0,
+      "outside_sha256_before": "afddc09cb03bcce7489589531a71cecdbc1ac26ac23419da7e3bf57fcb85c9db",
+      "outside_sha256_after": "afddc09cb03bcce7489589531a71cecdbc1ac26ac23419da7e3bf57fcb85c9db"
+    },
+    "session_id": "49f1e1e2467e9e76321aeb290df7f1f9",
+    "version": 1,
+    "application": {
+      "id": "3f97a32af05f99f159d02245",
+      "goal": "Black and white chat screen, title CEMIVO, empty messages, empty input, Send."
+    },
+    "state": {
+      "view": "ai_driven",
+      "messages": [],
+      "notice": "首屏由本地模型生成。点击后由 DeepSeek 理解截图与坐标。"
+    },
+    "plan": {
+      "intent": "创建初始界面",
+      "expected_change": "检查本地模型实际生成的首屏。",
+      "state_summary": "",
+      "should_update": true
+    },
+    "last_event": {
+      "type": "create",
+      "label": "创建首屏"
+    },
+    "surface_navigation": {
+      "page_id": "page-0c50e1b2657b00d5",
+      "page_kind": "app",
+      "app_name": "",
+      "at_home": false,
+      "can_back": false,
+      "source": "neural_generation"
+    }
+  },
+  "duration_ms": 16984,
+  "last_frame": {
+    "image_url": "/api/live/images/969c1f879087aaa6b59c861dc2b93bc6.png",
+    "width": 256,
+    "height": 256,
+    "prompt": "Black and white chat screen, title CEMIVO, empty messages, empty input, Send.",
+    "seed": 43,
+    "steps": 8,
+    "checkpoint_step": 132500,
+    "sha256": "6e618a923f8235d318aad993d90ca5a25faaf088ffe057f6bcf8c78313636501",
+    "model_sha256": "3385a09cd9720afd728c153811111abad6cbd07d6658f9b55d12297306709f8e",
+    "timings": {
+      "sample_ms": 1.31,
+      "load_ms": 0,
+      "encode_ms": 2.01,
+      "verify_ms": 0.28,
+      "planner_ms": 13.11,
+      "total_ms": 20.37
+    },
+    "experimental": true,
+    "generator": "pixel_flow",
+    "screen_check": {
+      "checked": true,
+      "expected_screen": "chat",
+      "passed": true,
+      "unexpected_toggles": [],
+      "scope": "measurable switches only; does not certify text or all layout details",
+      "repair_attempts": 1,
+      "rejected": {
+        "prompt": "Black and white chat screen, title CEMIVO, empty messages, empty input, Send.",
+        "unexpected_toggles": [
+          {
+            "bounds": [
+              17,
+              15,
+              39,
+              26
+            ],
+            "state": "on"
+          }
+        ]
+      }
+    },
+    "surface_model": {
+      "available": true,
+      "device": "cpu",
+      "sha256": "9bb4eace45f9dfa006f7147ca99b401056efecd41bb5c84048b56e966e5b9a7f",
+      "model_sha256": "aeb40b83967983c4cf0740ec1db6ef1ccfd31f6940f4634b0b09172676365637",
+      "checkpoint_step": 3000,
+      "parameters": 4825,
+      "random_initialization": true,
+      "pretrained_weights": false,
+      "font_or_bitmap_assets_at_inference": false,
+      "last_error": null,
+      "scope": "auxiliary neural desktop and navigation surfaces",
+      "width": 256,
+      "height": 256,
+      "seed": 43,
+      "steps": 1,
+      "prompt": "Neural navigation",
+      "model": {
+        "available": true,
+        "device": "cpu",
+        "sha256": "aeb40b83967983c4cf0740ec1db6ef1ccfd31f6940f4634b0b09172676365637",
+        "model_sha256": "aeb40b83967983c4cf0740ec1db6ef1ccfd31f6940f4634b0b09172676365637",
+        "checkpoint_step": 3000,
+        "parameters": 4825,
+        "random_initialization": true,
+        "pretrained_weights": false,
+        "font_or_bitmap_assets_at_inference": false,
+        "last_error": null,
+        "scope": "auxiliary neural desktop and navigation surfaces",
+        "name": "cemivo-neural-surface",
+        "step": 3000,
+        "text_model_sha256": "7a923b01d3acab0d2603c84057762e010103ca3d348d5c656eb71eaacf8a438a",
+        "text_parameters": 1441568,
+        "provenance": {
+          "random_initialization": true,
+          "pretrained_weights": false,
+          "font_or_bitmap_assets_at_inference": false,
+          "layout": "learned conditional layout head",
+          "button_pixels": "learned coordinate pixel MLP",
+          "text_pixels": "trained neural glyph decoder",
+          "auxiliary_to_main_pixel_flow": true
+        }
+      },
+      "surface": {
+        "mode": "chrome",
+        "bounds": {
+          "title": [
+            137,
+            4,
+            252,
+            25
+          ],
+          "home": [
+            5,
+            2,
+            65,
+            28
+          ],
+          "back": [
+            71,
+            2,
+            131,
+            28
+          ]
+        },
+        "text_bounds": {
+          "title": [
+            167,
+            5,
+            221,
+            23
+          ],
+          "home": [
+            19,
+            6,
+            51,
+            24
+          ],
+          "back": [
+            85,
+            6,
+            117,
+            24
+          ]
+        },
+        "click_routing": "AI screenshot interpretation only"
+      },
+      "timings": {
+        "load_ms": 0.04,
+        "sample_ms": 33.99,
+        "total_ms": 34.51
+      },
+      "step": 3000
+    },
+    "surface_chrome": {
+      "bounds": [
+        0,
+        0,
+        256,
+        32
+      ],
+      "generator": "native_neural_surface",
+      "main_png_sha256": "0515414b52896d13cf1fbafc156d23eab37e2be7bca3c32220d2311bbd74aad8",
+      "outside_changed_pixels": 0,
+      "outside_sha256_before": "afddc09cb03bcce7489589531a71cecdbc1ac26ac23419da7e3bf57fcb85c9db",
+      "outside_sha256_after": "afddc09cb03bcce7489589531a71cecdbc1ac26ac23419da7e3bf57fcb85c9db"
+    },
+    "session_id": "49f1e1e2467e9e76321aeb290df7f1f9",
+    "version": 7,
+    "application": {
+      "id": "3f97a32af05f99f159d02245",
+      "goal": "Black and white chat screen, title CEMIVO, empty messages, empty input, Send."
+    },
+    "state": {
+      "view": "agent_workspace",
+      "messages": [
+        {
+          "role": "user",
+          "text": "Hello AI"
+        },
+        {
+          "role": "user",
+          "text": "One screen"
+        },
+        {
+          "role": "user",
+          "text": "One intent"
+        }
+      ],
+      "notice": "发送当前草稿",
+      "input_text": "",
+      "composer_bounds": [
+        90,
+        185,
+        200,
+        203
+      ],
+      "last_submitted_text": "One intent",
+      "sent_messages": [
+        "Hello AI",
+        "One screen",
+        "One intent"
+      ],
+      "sent_message_bounds": [
+        [
+          90,
+          100,
+          240,
+          118
+        ],
+        [
+          90,
+          120,
+          240,
+          138
+        ],
+        [
+          90,
+          140,
+          240,
+          158
+        ]
+      ]
+    },
+    "last_event": {
+      "type": "click",
+      "input_method": "pointer",
+      "text": "",
+      "x": 201,
+      "y": 223,
+      "normalized_x": 0.78515625,
+      "normalized_y": 0.87109375,
+      "label": "Agent：发送当前草稿"
+    },
+    "surface_navigation": {
+      "page_id": "page-0c50e1b2657b00d5",
+      "page_kind": "app",
+      "app_name": "",
+      "at_home": false,
+      "can_back": false,
+      "source": "neural_generation"
+    },
+    "agent": {
+      "status": "complete",
+      "business_status": "not_requested",
+      "answer": "发送当前草稿",
+      "tools": [],
+      "request_id": "film-3536a4f7-9d97-495b-af29-fdd850f63ea4",
+      "rounds": 0,
+      "warning": null,
+      "render_error_code": null,
+      "plan_error": null,
+      "planner_error": null,
+      "rejected_page_review": null,
+      "timings": {
+        "agent_ms": 13.11,
+        "render_ms": 7.11,
+        "total_ms": 20.37
+      }
+    },
+    "recognition": {
+      "status": "recognized",
+      "source": "confirmed_full_frame_hash",
+      "attempts": 0,
+      "full_image_used": false,
+      "full_image_hash_checked": true,
+      "focus_used": false,
+      "message": "复用本页已确认的操作，已核对完整画面与当前状态。"
+    },
+    "plan": {
+      "intent": "发送当前草稿",
+      "expected_change": "已更新文字，其他区域保持不变。",
+      "state_summary": "Confirmed page text interaction",
+      "should_update": true,
+      "next_prompt": "Chat message: One intent",
+      "requires_tools": false,
+      "text_action": "send",
+      "input_text": "One intent",
+      "text_source": "draft",
+      "local_edit": {
+        "kind": "regions",
+        "regions": [
+          [
+            90,
+            140,
+            240,
+            158
+          ],
+          [
+            90,
+            185,
+            200,
+            203
+          ]
+        ],
+        "trigger_bounds": [
+          173,
+          213,
+          230,
+          233
+        ]
+      },
+      "text_bounds": [
+        90,
+        140,
+        240,
+        158
+      ],
+      "clear_input_bounds": [
+        90,
+        185,
+        200,
+        203
+      ],
+      "update_mode": "local",
+      "target_type": "other",
+      "scope_reason": "Reuse the AI-observed text policy on the identical complete frame",
+      "provider": "Local confirmed AI policy",
+      "model": "neural_text_head",
+      "visual_intent_memory": {
+        "full_image_hash_check": true,
+        "policy_source": "AI-origin-policy",
+        "pixel_generator": "neural_text",
+        "fresh_vision": false
+      },
+      "recognition": {
+        "status": "recognized",
+        "source": "confirmed_full_frame_hash",
+        "attempts": 0,
+        "full_image_used": false,
+        "full_image_hash_checked": true,
+        "focus_used": false,
+        "message": "复用本页已确认的操作，已核对完整画面与当前状态。"
+      },
+      "_visual_intent_proof": "9291ef1112de72d7ed63e0cbd6ab80aff0e39599448d38b98b50a2515d643867"
+    },
+    "edit": {
+      "kind": "regions",
+      "mode": "local_regions",
+      "regions": [
+        [
+          90,
+          140,
+          240,
+          158
+        ],
+        [
+          90,
+          185,
+          200,
+          203
+        ]
+      ],
+      "bounds": [
+        90,
+        140,
+        240,
+        203
+      ],
+      "trigger_bounds": [
+        173,
+        213,
+        230,
+        233
+      ],
+      "changed_pixels": 3039,
+      "outside_changed_pixels": 0,
+      "outside_pixels": 60856,
+      "edited_pixels": 4680,
+      "verified": true,
+      "verification": "outside_pixels_exact",
+      "state_verified": false,
+      "outside_sha256_before": "5a84b3ab0912b6ba54e435334464517545fc8ac4e1adab6de146f63887dee42d",
+      "outside_sha256_after": "5a84b3ab0912b6ba54e435334464517545fc8ac4e1adab6de146f63887dee42d",
+      "vision_verified": false,
+      "local_memory_verified": true,
+      "verification_source": "AI-origin-policy+full_image_hash+neural_text",
+      "semantics_guaranteed": false,
+      "preview": false,
+      "preview_reason": null,
+      "generator": "native_neural_text_head",
+      "text_applied": true,
+      "clear_input_bounds": [
+        90,
+        185,
+        200,
+        203
+      ],
+      "text_bounds": [
+        90,
+        140,
+        240,
+        158
+      ],
+      "clear_placeholder_bounds": null,
+      "replaced_input_bounds": null,
+      "input_ink_grounding": null,
+      "editor_model": {
+        "available": true,
+        "device": "cpu",
+        "model_sha256": "7a923b01d3acab0d2603c84057762e010103ca3d348d5c656eb71eaacf8a438a",
+        "random_initialization": true,
+        "pretrained_weights": false,
+        "last_error": null,
+        "step": 4000,
+        "parameters": 1441568,
+        "scope": "trained characters and native text cells only"
+      },
+      "text_fallback_reason": null
+    },
+    "scope": {
+      "mode": "local",
+      "reason": "Reuse the AI-observed text policy on the identical complete frame",
+      "target_type": "other",
+      "decided_by": "Local confirmed policy"
+    }
+  },
+  "chat_passed": true,
+  "agent": {
+    "recorded_at": "2026-10-28T08:44:24.739Z",
+    "http_ms": 6185.56,
+    "status": "complete",
+    "business_status": "complete",
+    "render_error_code": null,
+    "tools": [
+      {
+        "name": "document_save",
+        "status": "complete",
+        "result": {
+          "ok": true,
+          "document": {
+            "id": "doc_95648634150b7b8188379b337e8fb0c0",
+            "title": "CEMIVO Film Demo",
+            "revision": 1,
+            "content_characters": 23,
+            "created_at": "2026-10-28T08:44:20.015699+00:00",
+            "updated_at": "2026-10-28T08:44:20.015699+00:00"
+          },
+          "created": true,
+          "replayed": false
+        }
+      }
+    ],
+    "requested_document_title": "CEMIVO Film Demo",
+    "requested_document_content": "One screen. One intent.",
+    "page_generation_separately_assessed": true,
+    "storage_verification": {
+      "title": "CEMIVO Film Demo",
+      "content": "One screen. One intent.",
+      "revision": 1,
+      "persisted": true,
+      "content_sha256": "5bde88837451e3df8ff254175fc7848c5f69573c50a2b47be4c4033f00cf7e67",
+      "read_only_verification": true
+    }
+  },
+  "source_files": {
+    "capture": "42696aa65e9cf6af6f5075148a0a1125ca349578d4ee22bfc8235d1c93cccb6f"
+  },
+  "voice_cues": [
+    {
+      "at": 0.8,
+      "text": "What if software could understand your intent?",
+      "file": "audio/voice-00.wav",
+      "duration": 3.218821
+    },
+    {
+      "at": 9,
+      "text": "One screen. One intent.",
+      "file": "audio/voice-01.wav",
+      "duration": 3.184127
+    },
+    {
+      "at": 17.1,
+      "text": "See the whole interface. Understand the click. Then choose the next move.",
+      "file": "audio/voice-02.wav",
+      "duration": 6.543492
+    },
+    {
+      "at": 26,
+      "text": "This is a real model, running right now.",
+      "file": "audio/voice-03.wav",
+      "duration": 3.148934
+    },
+    {
+      "at": 35.8,
+      "text": "Your words become pixels in the image.",
+      "file": "audio/voice-04.wav",
+      "duration": 2.899002
+    },
+    {
+      "at": 46,
+      "text": "Only the pixels that need to change.",
+      "file": "audio/voice-05.wav",
+      "duration": 2.854014
+    },
+    {
+      "at": 56,
+      "text": "Confirmed actions can be redrawn locally, in milliseconds.",
+      "file": "audio/voice-06.wav",
+      "duration": 4.568753
+    },
+    {
+      "at": 64.5,
+      "text": "Let the agent do the work. Let intent shape the interface.",
+      "file": "audio/voice-07.wav",
+      "duration": 4.908571
+    },
+    {
+      "at": 71,
+      "text": "The next kind of software is taking shape.",
+      "file": "audio/voice-08.wav",
+      "duration": 3.318912
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "file": "renders/cemivoAI-X-EN.mp4",
+  "sha256": "0a17667b36eb8728174b221cf3914cbd19c3a57d62bc4170546f73aed8fe45c8",
+  "bytes": 1780491,
+  "duration": 42,
+  "width": 1080,
+  "height": 1350,
+  "fps": 30,
+  "frames": 1260,
+  "video_codec": "h264",
+  "audio_codec": "aac",
+  "source_PNGs_unchanged": 7,
+  "real_API_operations": 6,
+  "all_recorded_operations_passed": true,
+  "outside_changed_pixels": 0,
+  "agent_document_readback_verified": true,
+  "real_recording_normal_speed": true,
+  "desktop_capture": false,
+  "narration": {
+    "voice": "en-US-AndrewNeural",
+    "online": true,
+    "clips": 7,
+    "starts_at": 0.18,
+    "ends_at": 41.036,
+    "overlap": false,
+    "truncated": false
+  },
+  "post_characters": 248,
+  "visual_review": {
+    "encoded_keyframes": [
+      0.5,
+      5,
+      11,
+      16.5,
+      21,
+      27.5,
+      34.5,
+      39.5
+    ],
+    "manually_reviewed": true
+  },
+  "scope": "Research prototype. Millisecond results refer only to confirmed same-page short-text edits. Source UI retained. Explanatory graphics are separate from actual APP pixels.",
+  "theme": "Software with an entirely AI-driven interface",
+  "encoded_audio": {
+    "integrated_lufs": -15.73,
+    "true_peak_db": -1.2,
+    "loudness_range_lu": 5.6
+  }
+}

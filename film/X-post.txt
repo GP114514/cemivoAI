@@ -1,0 +1,16 @@
+TITLE
+Software With an Entirely AI-Driven Interface
+
+X POST
+I'm building software whose entire interface is driven by AI.
+
+Click or type your intent. AI redraws the screen; an agent handles the work.
+
+cemivoAI - real model output and verified actions. Still a prototype.
+
+https://github.com/GP114514/cemivoAI
+
+LONGER INTRODUCTION
+cemivoAI explores software whose entire interface is driven by AI. The screen you interact with is a generated image: its controls, text, and changes follow your clicks and instructions. The system reads the whole frame, infers your intent, and chooses whether to redraw a small area or the full screen. A visual model trained from random weights produces the interface pixels, while an Agent connects those interactions to real tasks. This demonstration uses actual model outputs, measured local edits, and a document that was saved and read back to verify its content. The goal is one adaptive interface for many kinds of work. It remains a research prototype, with general UI quality still improving.
+
+GitHub: https://github.com/GP114514/cemivoAI

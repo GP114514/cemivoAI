@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="same-origin">
+  <title>cemivoAI · 像素 APP 运行台</title>
+  <link rel="stylesheet" href="/live.css">
+  <script src="/live.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#frameStage">跳到生成画面</a>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="cemivoAI 首页">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect x="1.5" y="1.5" width="27" height="27" rx="8" fill="currentColor"/><path d="M21 9.5H13a5.5 5.5 0 0 0 0 11h8M10 15h11" fill="none" stroke="#fff" stroke-width="2"/></svg>
+      <span>cemivo<span class="brand-ai">AI</span></span>
+    </a>
+    <span class="topbar-divider" aria-hidden="true"></span>
+    <span class="page-name">像素 APP 运行台 <span class="experiment-tag">EXPERIMENT</span></span>
+    <nav class="top-links" aria-label="工作台导航"><a href="/">图像实验室 ↗</a><a href="/train">训练控制台 ↗</a></nav>
+    <span class="connection"><i id="connectionDot" aria-hidden="true"></i><span id="connectionText">连接中</span></span>
+  </header>
+
+  <main>
+    <section class="intro" aria-labelledby="pageTitle">
+      <div><p class="eyebrow">DESCRIBE → ACT → ADAPT</p><h1 id="pageTitle">说出要用的应用，<span>让界面随任务变化。</span></h1><p class="intro-copy">描述应用，点击生成的画面；AI 选择更新范围，Agent 执行任务，自研模型绘制结果。</p></div>
+      <div class="process-note"><span>01 <b>DeepSeek</b> 看图推断</span><i aria-hidden="true">→</i><span>02 <b>cemivoAI</b> 生成像素</span></div>
+    </section>
+
+    <div class="live-layout">
+      <aside class="setup-column" aria-label="运行台设置">
+        <section class="panel session-panel" aria-labelledby="sessionTitle">
+          <div class="panel-title"><span class="section-number">01</span><h2 id="sessionTitle">描述应用</h2></div>
+          <p class="panel-description">完整说明交给 AI 规划，首屏由本地图像模型绘制。</p>
+          <form id="sessionForm">
+            <div class="field-label"><label for="initialPrompt">应用与首屏描述</label><span id="promptBytes">— / 190 字节</span></div>
+            <textarea id="initialPrompt" rows="8" maxlength="2000" spellcheck="false" aria-describedby="promptNote">制作一个简洁的黑白聊天与任务应用。左侧是会话列表和新建会话按钮，中间显示当前聊天记录，底部有消息输入区与发送按钮，顶部显示会话名称和设置入口。初始状态没有消息，显示可开始对话的提示；发送后展示用户消息、处理中状态和回复。点击新建会话清空当前聊天视图，点击会话切换内容，设置中提供通知开关。右键输入文字时，结合完整页面与点击位置理解操作。涉及笔记、文档和待办的任务交给 Agent，以真实工具回执显示完成情况；尚不具备的能力明确说明。使用清晰的矩形、线条与短标签，留足间距；绘图模型的文字外观仍可能不清楚。</textarea>
+            <p class="field-note" id="promptNote">完整说明会保留，由 AI 规划首屏；绘图模型的文字外观仍可能不清楚。</p>
+            <div class="field-label steps-label"><label for="samplingSteps">绘图采样步数</label><span>用于新会话</span></div>
+            <select id="samplingSteps"><option value="4">4 步 · 更少计算</option><option value="8" selected>8 步</option><option value="16">16 步</option><option id="sampling32Option" value="32" disabled>32 步 · 需后台支持</option></select>
+            <div class="seed-row"><label for="sessionSeed">随机种子</label><input id="sessionSeed" type="number" min="0" max="2147483647" step="1" value="42" inputmode="numeric"></div>
+            <button id="createSession" class="primary-button" type="submit" disabled><span id="createLabel">创建会话</span><span aria-hidden="true">↗</span></button>
+          </form>
+          <div class="session-secondary"><button id="syncSession" class="quiet-button" type="button" disabled>同步当前帧</button><button id="backButton" class="quiet-button" type="button" disabled>← 返回上一帧</button></div>
+        </section>
+
+        <section class="panel planner-panel" aria-labelledby="plannerTitle">
+          <div class="panel-title"><span class="section-number">02</span><h2 id="plannerTitle">视觉理解 AI</h2><span class="small-status" id="plannerBadge">—</span></div>
+          <div class="provider-name">DeepSeek <span>VISION PLANNER</span></div>
+          <form id="plannerForm" autocomplete="off">
+            <label class="standalone-label" for="plannerKey">DeepSeek API Key</label>
+            <input id="plannerKey" type="password" placeholder="在这里填写密钥" autocomplete="off" spellcheck="false" aria-describedby="keyNote">
+            <p class="field-note" id="keyNote">密钥仅保留在本次本地服务运行中，页面不保存或回显。</p>
+            <details class="advanced-settings"><summary>地址与模型设置</summary><div class="advanced-fields"><label for="plannerEndpoint">官方 API 地址</label><input id="plannerEndpoint" type="url" value="https://api.deepseek.com" spellcheck="false" autocomplete="off"><label for="plannerModel">视觉模型</label><input id="plannerModel" type="text" value="deepseek-flash" spellcheck="false" autocomplete="off"><p class="field-note">此版本使用官方地址与 deepseek-flash。</p></div></details>
+            <button id="savePlanner" class="secondary-button wide" type="submit" disabled>保存到本次运行</button>
+          </form>
+          <p class="config-evidence" id="plannerEvidence">配置尚未读取。保存配置不会预先验证远端连接。</p>
+          <p class="privacy-note">点击或发送文字后，当前图片、点击坐标及输入内容会发送给 DeepSeek。</p>
+        </section>
+        <section class="panel agent-mode-panel" aria-labelledby="agentModeTitle">
+          <div class="panel-title"><h2 id="agentModeTitle">Agent 任务模式</h2><span class="small-status" id="agentModeBadge">读取状态中</span></div>
+          <label class="agent-toggle" for="agentToggle"><span>让 AI 执行应用任务</span><input id="agentToggle" type="checkbox" role="switch" aria-describedby="agentScope agentAvailability" checked disabled><i aria-hidden="true"></i></label>
+          <p class="field-note" id="agentScope">开启后，AI 将任务交给 Agent 执行，并按结果更新画面；普通开关点击只修改外观。目前可执行本地笔记、文档、待办与导出。</p>
+          <p class="field-note">执行 Agent 任务时，相关工作区内容会发送给 DeepSeek。</p>
+          <p class="agent-availability" id="agentAvailability" role="status">正在读取 Agent 工作区…</p>
+          <button id="queryAgentRequest" class="secondary-button wide" type="button" disabled>查询这次任务结果</button>
+          <p class="field-note">查询与刷新只读取结果，不会重新执行任务。</p>
+        </section>
+      </aside>
+
+      <section class="stage-column" aria-labelledby="stageTitle">
+        <div class="stage-heading"><div><p class="eyebrow">GENERATED APP FRAME</p><h2 id="stageTitle">真实像素画面 <span id="frameVersion">—</span></h2></div><button id="openScreenWindow" class="secondary-button" type="button">独立画面窗口</button><span class="frame-state" id="activityState"><i aria-hidden="true"></i><span id="activityText">等待创建</span></span></div>
+        <section class="toggle-edit-panel" aria-labelledby="toggleEditTitle">
+          <div class="toggle-edit-heading"><label id="toggleEditTitle" for="interactionMode">画面更新范围</label><span id="interactionModeBadge" class="small-status">读取能力中</span></div>
+          <select id="interactionMode" aria-describedby="interactionModeNote" disabled><option value="auto" selected>AI 自动选择</option><option value="toggle_only">只改开关</option><option value="full">整屏重绘</option></select>
+          <p id="interactionModeNote">页面操作优先可见更新，开关锁定其他像素；未通过验证保留原图。</p>
+        </section>
+        <p id="modelVersionNotice" class="model-version-note" role="status" aria-live="polite" hidden></p>
+        <button id="loadLatestModel" class="secondary-button model-update-button" type="button" aria-describedby="modelVersionNotice" hidden disabled>加载最新模型</button>
+        <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+        <section id="visionFeedback" class="vision-feedback" role="status" aria-live="polite" aria-atomic="true" hidden>
+          <div class="vision-feedback-heading"><strong id="visionFeedbackTitle">等待画面操作</strong><span id="visionFeedbackElapsed"></span></div>
+          <p id="visionFeedbackCoordinates" class="vision-feedback-coordinates"></p>
+          <p id="visionFeedbackMessage">点击后，这里会显示识别过程与明确结果。</p>
+          <p id="visionFeedbackEvidence" class="vision-feedback-evidence"></p>
+          <button id="clarifyFeedback" class="secondary-button" type="button" hidden>补充说明</button>
+        </section>
+        <div class="stage" id="frameStage" tabindex="-1" aria-busy="false">
+          <div class="stage-topline"><span id="nativeDimensions">原生 —</span><span id="displayDimensions">显示 —</span></div>
+          <div class="image-host" id="imageHost">
+            <div class="empty-state" id="emptyState"><span class="empty-plus" aria-hidden="true">＋</span><strong>从一张真实图片开始</strong><p>创建会话后，这里只显示模型实际生成的像素。</p><span>不自动创建 · 不使用界面图片回退</span></div>
+            <div class="pixel-surface" id="pixelSurface" hidden>
+              <img id="liveImage" alt="尚无生成画面" role="button" tabindex="0" aria-label="模型生成画面，可点击或按回车在中心发起一次视觉推断" aria-describedby="pixelHelp" draggable="false">
+              <span class="click-marker" id="clickMarker" aria-hidden="true" hidden><i></i></span>
+            </div>
+          </div>
+          <div class="stage-bottomline"><span><i class="source-dot" aria-hidden="true"></i> 本地自研模型输出</span><span id="frameCheckpoint">检查点 —</span></div>
+        </div>
+        <p class="pixel-help" id="pixelHelp">右键画面可在该位置输入文字，回车后结合完整页面判断下一步；Shift + 回车换行。普通点击由 AI 判断更新范围，开关操作不改其他像素。键盘回车或空格会点击画面中心。</p>
+
+        <div class="timing-grid" aria-label="来自本次请求的真实耗时">
+          <div><span>视觉 AI 推断</span><strong id="plannerTiming">—</strong><small>planner</small></div>
+          <div><span>图像模型采样</span><strong id="sampleTiming">—</strong><small>sampling</small></div>
+          <div><span>服务总耗时</span><strong id="serverTiming">—</strong><small>server</small></div>
+          <div><span>实际 API 往返</span><strong id="roundtripTiming">—</strong><small>round trip</small></div>
+        </div>
+
+        <section class="input-panel" aria-labelledby="inputTitle">
+          <div class="input-heading"><h3 id="inputTitle">运行台输入 <span>可选</span></h3><span>与下一次点击一同发送</span></div>
+          <form id="eventForm"><label class="sr-only" for="eventText">给视觉 AI 的操作说明或输入内容</label><textarea id="eventText" rows="2" maxlength="500" placeholder="例如：我想打开设置；或在这里写要发送的消息。" aria-describedby="inputNote"></textarea><div class="input-actions"><p id="inputNote">最多 500 字。点击发送才提交这里的说明；普通画面点击不会附带旧草稿。右键可向指定位置输入文字。</p><button id="submitText" class="secondary-button" type="submit" disabled>发送文字给视觉 AI <span aria-hidden="true">↗</span></button></div></form>
+        </section>
+        <div class="honesty-note"><span aria-hidden="true">◇</span><p><strong>两个不同角色，协作生成下一屏。</strong>DeepSeek 负责看图和推测意图；cemivoAI 负责生成像素。当前绘图模型的文字与按钮外观仍不可靠，视觉推断也可能出错。</p></div>
+      </section>
+
+      <aside class="inspector-column" aria-label="实际会话与推断记录">
+        <section class="panel agent-result-panel" aria-labelledby="agentResultTitle">
+          <div class="panel-title"><h2 id="agentResultTitle">Agent 执行结果</h2><span class="small-status" id="agentResultStatus">—</span></div>
+          <p class="agent-pending" id="agentPending" role="status" hidden></p>
+          <p class="agent-result-evidence" id="agentResultEvidence">尚无已确认的 Agent 结果。</p>
+          <p class="agent-answer" id="agentAnswer">—</p>
+          <p class="agent-warning" id="agentWarning" hidden></p>
+          <dl class="facts"><div><dt>请求标识</dt><dd id="agentRequestId">—</dd></div><div><dt>执行轮数</dt><dd id="agentRounds">—</dd></div><div><dt>Agent 耗时</dt><dd id="agentTiming">—</dd></div><div><dt>结果绘图</dt><dd id="agentRenderTiming">—</dd></div><div><dt>任务总耗时</dt><dd id="agentTotalTiming">—</dd></div></dl>
+          <details class="agent-audit" open><summary>实际工具执行记录 <span id="agentToolCount">—</span></summary><ol id="agentToolList" class="agent-tool-list"><li class="list-empty">—</li></ol></details>
+          <p class="agent-save-note">写入工具一旦成功即真实保存。绘图失败、后续步骤失败或返回上一帧，都不会撤销已保存的业务结果。</p>
+        </section>
+        <section class="panel reasoning-panel" aria-labelledby="reasoningTitle">
+          <div class="panel-title"><span class="section-number">03</span><h2 id="reasoningTitle">最近一次 AI 推断</h2></div>
+          <p class="panel-description" id="planEvidence">等待点击后的真实推断。</p>
+          <div class="reason-field"><span>理解的意图</span><p id="planIntent">—</p></div>
+          <div class="reason-field"><span>预期画面变化</span><p id="planExpected">—</p></div>
+          <div class="reason-field"><span>AI 选择的更新范围</span><p id="scopeDecision">本帧尚无 AI 范围选择回执。</p></div>
+          <div class="reason-field"><span>像素稳定性</span><p id="localEditEvidence">尚无局部编辑校验。</p></div>
+          <details class="prompt-details"><summary>交给图像模型的描述</summary><pre id="planPrompt">—</pre></details>
+        </section>
+
+        <section class="panel facts-panel" aria-labelledby="factsTitle">
+          <div class="panel-title"><h2 id="factsTitle">会话实况</h2><span class="live-label"><i aria-hidden="true"></i> LIVE</span></div>
+          <dl class="facts"><div><dt>会话</dt><dd id="sessionIdentity">—</dd></div><div><dt>当前帧</dt><dd id="factVersion">—</dd></div><div><dt>本帧步数</dt><dd id="factSteps">—</dd></div><div><dt>画面哈希</dt><dd id="frameHash">—</dd></div><div><dt>上下文消息</dt><dd id="messageCount">—</dd></div><div><dt>权重载入</dt><dd id="loadTiming">—</dd></div><div><dt>请求到呈现</dt><dd id="presentTiming">—</dd></div></dl>
+          <p class="state-notice" id="sessionNotice">—</p>
+          <details class="context-details"><summary>会话上下文</summary><ol id="contextMessages" class="context-list"><li class="list-empty">—</li></ol></details>
+          <details class="runtime-details"><summary>主图像模型运行状态</summary><dl class="facts"><div><dt>主模型训练</dt><dd id="trainingState">—</dd></div><div><dt>主模型训练步数</dt><dd id="trainingSteps">—</dd></div><div><dt>主模型快照步数</dt><dd id="snapshotStep">—</dd></div><div><dt>主模型运行设备</dt><dd id="runtimeDevice">—</dd></div><div><dt>主模型已载入</dt><dd id="runtimeLoaded">—</dd></div></dl><p id="runtimeError" class="runtime-error" hidden></p></details>
+        </section>
+
+        <section class="panel event-panel" aria-labelledby="eventsTitle"><div class="panel-title"><h2 id="eventsTitle">交互事件</h2><span class="event-count" id="eventCount">0</span></div><ol class="event-list" id="eventList" aria-live="polite" aria-relevant="additions"><li class="list-empty" id="emptyEvents">尚无本页交互。</li></ol></section>
+        <section class="panel workspace-panel" aria-labelledby="workspaceTitle"><div class="panel-title"><h2 id="workspaceTitle">真实工作区</h2><button id="refreshWorkspace" class="quiet-button" type="button" disabled>只读刷新 ↻</button></div><p class="workspace-evidence" id="workspaceEvidence">—</p><h3>文档 / 笔记 <span id="documentCount">—</span></h3><ul class="workspace-list" id="workspaceDocuments"><li class="list-empty">—</li></ul><h3>待办 <span id="taskCount">—</span></h3><ul class="workspace-list" id="workspaceTasks"><li class="list-empty">—</li></ul><details class="workspace-capabilities"><summary>服务声明的能力</summary><ul id="agentCapabilities" class="capability-list"><li class="list-empty">—</li></ul></details></section>
+      </aside>
+    </div>
+    <footer class="page-footer"><span>原始图片 + 操作上下文 → 视觉推断 → 新一帧像素</span><span>本地服务状态每 5 秒读取</span></footer>
+  </main>
+  <section id="contextInput" class="context-input" role="dialog" aria-labelledby="contextInputTitle" aria-describedby="contextInputHelp contextInputStatus" hidden>
+    <div class="context-input-heading"><strong id="contextInputTitle">说明这个位置的操作</strong><button id="contextInputClose" class="quiet-button" type="button" aria-label="关闭操作说明">×</button></div>
+    <p id="contextInputHelp">临时操作说明，画面中不会添加输入控件。AI 将结合完整页面与这个位置判断下一步。</p>
+    <p id="contextInputPosition" class="context-input-position"></p>
+    <form id="contextInputForm"><label class="sr-only" for="contextInputText">希望执行的操作或输入文字</label><textarea id="contextInputText" rows="3" maxlength="500" placeholder="例如：在这里输入你好，然后发送。" aria-describedby="contextInputKeys contextInputStatus"></textarea><div class="context-input-actions"><span id="contextInputKeys">回车发送 · Shift + 回车换行 · Esc 关闭</span><button id="contextInputSend" class="secondary-button" type="submit">发送说明 ↗</button></div></form>
+    <p id="contextInputStatus" class="context-input-status" role="status" aria-live="polite"></p>
+  </section>
+</body>
+</html>

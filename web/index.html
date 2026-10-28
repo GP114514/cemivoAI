@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light">
+  <title>cemivoAI · 神经图像实验室</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="cemivoAI 首页"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect x="1.5" y="1.5" width="27" height="27" rx="8" fill="#111"/><path d="M21 9.5H13a5.5 5.5 0 0 0 0 11h8M10 15h11" fill="none" stroke="#fff" stroke-width="2"/></svg><span>cemivo<span class="brand-ai">AI</span></span></a>
+    <div class="workspace-title"><span class="top-divider"></span>神经图像实验室<span class="version">02</span></div>
+    <div class="top-actions"><a class="text-button" href="/live">交互 APP ↗</a><a class="text-button" href="/train">训练控制台 ↗</a><span class="local-badge"><i></i><span id="connectionBadge">连接中</span></span><button class="text-button" id="aboutButton">模型说明 <span aria-hidden="true">↗</span></button></div>
+  </header>
+  <main class="workspace">
+    <aside class="controls">
+      <div class="panel-heading"><span class="eyebrow">LEARN TO GENERATE PIXELS</span><h1>从随机权重，<br>学习生成。</h1><p>黑白像素图像生成实验。模型效果随真实训练进度变化。</p></div>
+      <form id="generateForm">
+        <div class="field-heading"><label for="prompt">描述你的画面</label><span id="characterCount">0 / 190 字节</span></div>
+        <div class="prompt-shell"><textarea id="prompt" name="prompt" rows="5" maxlength="2000" spellcheck="false" required placeholder="给我一个聊天窗口的UI，包含发送、附件、语音按钮">给我一个聊天窗口的UI，包含发送、附件、语音按钮</textarea><span class="prompt-hint">建议60个汉字以内 · 最多190个 UTF-8 字节</span></div>
+        <div class="example-row" aria-label="提示词示例"><button type="button" class="example-chip" data-example="给我一个聊天窗口的UI，包含发送、附件、语音按钮">聊天窗口</button><button type="button" class="example-chip" data-example="一个黑白登录界面，有账号、密码和登录按钮">登录界面</button><button type="button" class="example-chip" data-example="一个黑白数据仪表盘，有折线图和统计卡片">数据看板</button><button type="button" class="example-chip" data-example="一个设置页面，有开关、滑块和保存按钮">设置页面</button><button type="button" class="example-chip" data-example="一个用直线和方框连接的简单流程图">流程图</button><button type="button" class="example-chip" data-example="白色背景上的黑色圆形、矩形、三角形与直线">基础图形</button></div>
+        <div class="control-section"><div class="field-heading"><label for="steps">采样步数</label><span>NEURAL SAMPLING</span></div><select id="steps" name="steps" disabled><option value="4">4 步 · 较少计算</option><option value="8" selected>8 步</option><option value="16">16 步</option><option value="32">32 步 · 较多计算</option></select><p class="control-note">少步可减少采样计算，但不保证生成质量。实际速度以本机测量为准。</p></div>
+        <div class="native-size"><div><span>原生输出</span><strong id="nativeDimensions">256 × 256</strong></div><span>PNG · 像素放大预览</span></div>
+        <div class="seed-row"><label for="seed">随机种子</label><input id="seed" type="number" min="0" max="2147483647" step="1" value="42"><button id="randomSeed" type="button" class="icon-button" title="随机种子" aria-label="随机种子">⚄</button></div>
+        <button id="generateButton" class="generate-button" type="submit" disabled><span class="generate-label">等待模型就绪</span><span class="generate-arrow" aria-hidden="true">↗</span></button><div class="shortcut"><span>本地神经网络采样</span><kbd>Ctrl ↵</kbd></div>
+      </form>
+      <div class="engine-note"><span class="tiny-square"></span><div>全部随机初始化 · 合成线稿训练<br><span>当前为实验模型，清晰文字仍需训练</span></div></div>
+    </aside>
+    <section class="output" aria-label="神经网络生成预览">
+      <div class="output-header"><div><div class="eyebrow">NEURAL IMAGE CANVAS</div><h2>图像预览 <span id="resultNumber">/ TRAIN</span></h2></div><div class="output-toolbar"><button id="variantButton" class="secondary-button" disabled>↻ <span>换一版</span></button><button id="fullscreenButton" class="icon-button boxed" disabled title="放大预览" aria-label="放大预览"><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M7 3H3v4m10-4h4v4M3 13v4h4m10-4v4h-4"/></svg></button><span class="toolbar-divider"></span><a id="downloadPng" class="download-button filled disabled" aria-disabled="true" download><span aria-hidden="true">↓</span> PNG</a></div></div>
+      <div id="message" class="message" role="status" aria-live="polite" hidden></div>
+      <div class="preview-source"><span id="previewSource">等待真实训练预览</span><span>原生像素放大 · 早期输出可能为噪声</span></div>
+      <div class="canvas-area neural-canvas" id="canvasArea"><span class="canvas-corner corner-tl"></span><span class="canvas-corner corner-br"></span><div id="emptyState" class="empty-state"><div class="empty-mark" aria-hidden="true">＋</div><p>正在连接神经网络训练服务</p><span>这里仅显示实际模型输出</span></div><img id="preview" alt="真实神经网络输出" hidden><div id="busyIndicator" class="busy-indicator" hidden><span class="spinner"></span> 神经网络正在采样</div></div>
+      <div class="result-meta"><div class="meta-left"><span class="result-indicator" id="resultIndicator"></span><strong id="resultLabel">尚无采样结果</strong><span class="meta-divider">/</span><span id="resultDimensions">256 × 256</span><span class="meta-divider">/</span><span id="resultCheckpoint">检查点 —</span></div><div class="meta-timing"><span>采样耗时</span><strong id="resultTiming">— <small>ms</small></strong></div></div>
+      <section class="training-panel" aria-label="真实训练进度"><div class="training-top"><div><span class="training-dot" id="trainingDot"></span><strong id="trainingState">连接训练服务</strong><span class="training-model" id="trainingModel">读取实际模型参数…</span></div><span id="trainingUpdated">每 5 秒更新</span></div><div class="training-progress" id="trainingProgress" role="progressbar" aria-label="训练步数" hidden><span id="trainingProgressFill"></span></div><div class="training-stats"><div><span>训练步数</span><strong id="trainingStep">—</strong></div><div><span>最近损失</span><strong id="trainingLoss">—</strong></div><div><span>已见样本</span><strong id="trainingSamples">—</strong></div><div><span>训练用时</span><strong id="trainingElapsed">—</strong></div></div><p class="training-description" id="trainingDescription">训练进度和损失来自本机服务，不代表图像质量承诺。</p><p class="training-error" id="trainingError" hidden></p></section>
+      <div class="history-heading"><span>本次采样 <small id="historyCount">0</small></span><span class="history-note">仅记录用户请求的真实神经网络结果</span></div><div class="history-strip" id="history" aria-label="最近采样的图片"><div class="history-empty">模型就绪后，在这里保留本次会话的采样结果。</div></div><div class="bottom-line"><span>图中的文字与按钮均由像素模型学习生成</span><span id="engineStatus">服务连接中…</span></div>
+    </section>
+  </main>
+  <dialog id="aboutDialog" class="about-dialog"><button class="dialog-close icon-button" id="closeAbout" aria-label="关闭模型说明">×</button><div class="eyebrow">RANDOM WEIGHTS. REAL PIXELS.</div><h2>从零初始化，<br>直接生成像素。</h2><p id="modelDescription">当前模型的结构、参数量与检查点信息正在从本机服务读取。</p><div class="about-grid"><div><strong id="modelParameters">—</strong><span>实际模型参数</span></div><div><strong id="modelCheckpoint">—</strong><span>已加载检查点步数</span></div></div><p class="about-footnote">所有模型权重从随机参数开始训练，训练数据为合成黑白线稿，不使用预训练模型。图片来自神经网络像素生成，不使用界面模板回退。</p><p class="about-footnote">这是早期训练实验。训练预览可能仍是噪声；少步采样、提示词遵循、清晰文字和软件界面细节均需要实际训练验证，不保证当前已学会。</p><p class="about-footnote" id="initializationStatus">随机初始化状态等待本机服务确认。</p></dialog>
+  <dialog id="previewDialog" class="preview-dialog"><div class="fullscreen-bar"><span id="fullscreenTitle">实际像素输出</span><button id="closePreview" class="secondary-button">关闭 <kbd>Esc</kbd></button></div><div class="fullscreen-image"><img id="largePreview" alt="放大的实际神经网络输出"></div></dialog>
+</body>
+</html>

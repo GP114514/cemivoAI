@@ -1,0 +1,11 @@
+{"type": "WordBoundary", "offset": 1020410, "duration": 1913330, "text": "These"}
+{"type": "WordBoundary", "offset": 3061250, "duration": 1275410, "text": "are"}
+{"type": "WordBoundary", "offset": 4464160, "duration": 4464160, "text": "actual"}
+{"type": "WordBoundary", "offset": 9056250, "duration": 4464160, "text": "outputs"}
+{"type": "WordBoundary", "offset": 13647910, "duration": 1402910, "text": "from"}
+{"type": "WordBoundary", "offset": 15178750, "duration": 382500, "text": "a"}
+{"type": "WordBoundary", "offset": 15688750, "duration": 4081660, "text": "model"}
+{"type": "WordBoundary", "offset": 19897910, "duration": 4336660, "text": "trained"}
+{"type": "WordBoundary", "offset": 24362080, "duration": 1785830, "text": "from"}
+{"type": "WordBoundary", "offset": 26275410, "duration": 3061250, "text": "random"}
+{"type": "WordBoundary", "offset": 29464160, "duration": 4974580, "text": "weights"}

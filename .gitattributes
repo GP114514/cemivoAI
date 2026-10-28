@@ -1,0 +1,16 @@
+* text=auto
+*.py text eol=lf
+*.js text eol=lf
+*.cjs text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.srt text eol=lf
+*.srt whitespace=-blank-at-eof
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.png binary
+*.jpg binary
+*.mp4 binary
+*.mp3 binary
+*.wav binary

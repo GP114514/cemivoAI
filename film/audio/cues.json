@@ -1,0 +1,50 @@
+{
+  "duration": 42,
+  "cues": [
+    {
+      "at": 0.18,
+      "text": "I'm building software whose entire interface is driven by AI.",
+      "file": "audio/voice-00.wav",
+      "duration": 4.152
+    },
+    {
+      "at": 4.65,
+      "text": "Click the image. Add your words. The interface redraws around your intent.",
+      "file": "audio/voice-01.wav",
+      "duration": 5.184
+    },
+    {
+      "at": 11,
+      "text": "These are actual outputs from a model trained from random weights.",
+      "file": "audio/voice-02.wav",
+      "duration": 3.816
+    },
+    {
+      "at": 18.2,
+      "text": "It reads the whole frame, then chooses a local edit or a full redraw.",
+      "file": "audio/voice-03.wav",
+      "duration": 4.656
+    },
+    {
+      "at": 25.2,
+      "text": "Here, only the chat changes. Everything outside the edit stays pixel-exact.",
+      "file": "audio/voice-04.wav",
+      "duration": 5.208
+    },
+    {
+      "at": 31.1,
+      "text": "The agent saved this document, then read it back to verify the result.",
+      "file": "audio/voice-05.wav",
+      "duration": 4.608
+    },
+    {
+      "at": 37.1,
+      "text": "One screen. Driven by AI. Built around your intent.",
+      "file": "audio/voice-06.wav",
+      "duration": 3.936
+    }
+  ],
+  "music": "Original procedural JavaScript score",
+  "narration": "Microsoft en-US-AndrewNeural; generic synthesized narration",
+  "offline": false
+}

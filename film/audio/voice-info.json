@@ -1,0 +1,16 @@
+{
+  "voice": "en-US-AndrewNeural",
+  "rate": "-2%",
+  "volume": "+0%",
+  "offline": false,
+  "online": true,
+  "service": "Microsoft Edge online neural TTS",
+  "engine": "edge-tts",
+  "version": "7.3.1",
+  "generic_synthesized_voice": true,
+  "voice_cloning": false,
+  "api_key_used": false,
+  "clips": 7,
+  "output_sample_rate": 48000,
+  "channels": 2
+}

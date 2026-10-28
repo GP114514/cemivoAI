@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>cemivoAI 训练控制台</title>
+  <link rel="stylesheet" href="/train.css">
+  <script src="/train.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/train" aria-label="cemivoAI 训练控制台"><span class="brand-icon">c.</span><span>cemivoAI<span class="brand-sub">TRAINING</span></span></a>
+    <div class="top-right"><span id="connection" class="connection"><i></i>正在连接</span><a class="workbench-link" href="/live">交互 APP <span>↗</span></a><a class="workbench-link" href="/">图像采样工作台 <span>↗</span></a></div>
+  </header>
+
+  <main>
+    <div class="page-heading"><div><p class="eyebrow">LOCAL MODEL / TRAINING</p><h1>训练控制台<span class="title-dot">.</span></h1><p class="intro">观察模型学习的每一步，按需保存、暂停与继续。</p></div><p id="last-update" class="last-update">等待实时数据</p></div>
+
+    <section class="hero card" aria-labelledby="state-title">
+      <div class="hero-top"><div><div class="section-label">当前训练</div><div class="state-line"><span id="state-dot" class="state-dot"></span><h2 id="state-title">正在读取训练状态</h2><span id="state-badge" class="badge">连接中</span></div><p id="state-note" class="muted">页面只读取状态，进入控制台不会自动开始或暂停训练。</p></div><div class="hero-step"><span id="step-value">—</span><span class="step-unit">步</span><p>累计目标 <strong id="target-value">—</strong> 步</p></div></div>
+      <div class="progress-track" role="progressbar" aria-label="训练累计进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="main-progress"><div id="progress-fill"></div></div>
+      <div class="progress-meta"><span id="progress-text">等待进度</span><div><span>已用 <strong id="elapsed-value">—</strong></span><span>预计剩余 <strong id="remaining-value">—</strong></span></div></div>
+      <div id="training-error" class="error-strip" hidden></div>
+    </section>
+
+    <div class="metric-grid">
+      <article class="metric card"><span class="section-label">当前 LOSS</span><strong id="loss-value">—</strong><span class="metric-foot">损失值，越低不代表图像一定可用</span></article>
+      <article class="metric card"><span class="section-label">已训练样本</span><strong id="samples-value">—</strong><span id="batch-foot" class="metric-foot">有效批次 —</span></article>
+      <article class="metric card"><span class="section-label">GPU 利用率</span><strong id="gpu-util-value">—</strong><span id="gpu-name" class="metric-foot">等待设备信息</span></article>
+      <article class="metric card"><span class="section-label">GPU 显存</span><strong id="gpu-memory-value">—</strong><span id="gpu-memory-foot" class="metric-foot">等待设备信息</span></article>
+    </div>
+
+    <div class="workspace-grid">
+      <div class="main-column">
+        <section class="card chart-card" aria-labelledby="loss-title">
+          <div class="card-heading"><div><p class="section-label">LEARNING CURVE</p><h2 id="loss-title">Loss 曲线</h2></div><div class="chart-tools"><label class="check"><input id="smooth-loss" type="checkbox">平滑显示</label><label class="sr-only" for="chart-range">曲线范围</label><select id="chart-range"><option value="0">全部记录</option><option value="500">最近 500 步</option><option value="1000">最近 1000 步</option></select></div></div>
+          <div class="chart-wrap"><svg id="loss-chart" viewBox="0 0 840 250" role="img" aria-label="真实训练记录中的 loss 折线"></svg><div id="chart-empty" class="empty-state">尚无训练曲线记录</div></div>
+          <div class="chart-caption"><span id="chart-caption">仅显示后端实际记录</span><span id="chart-last">—</span></div>
+        </section>
+
+        <section class="card preview-card" aria-labelledby="preview-title">
+          <div class="card-heading"><div><p class="section-label">MODEL OUTPUT</p><h2 id="preview-title">模型真实采样</h2></div><span id="preview-step" class="badge">暂无预览</span></div>
+          <div class="preview-layout"><a id="preview-link" class="preview-image-link" target="_blank" rel="noopener" hidden><img id="preview-image" alt="最近保存的模型生成预览，四个提示词按两行两列排列"></a><div id="preview-empty" class="preview-placeholder"><span class="preview-glyph">▧</span><strong>等待首次采样保存</strong><p>训练保存预览后，会在这里显示模型直接生成的图像。</p></div><div class="preview-notes"><p id="preview-caption" class="preview-description">最近保存的 2 × 2 采样网格。</p><ol id="preview-prompts" class="prompt-list"></ol><p class="quality-note">这些是模型生成结果。早期图像可能模糊、空白或文字难以辨认；训练完成也不等于生成质量已经合格。</p></div></div>
+        </section>
+
+        <section class="card checkpoint-card" aria-labelledby="checkpoint-title">
+          <div class="card-heading"><div><p class="section-label">SAVED PROGRESS</p><h2 id="checkpoint-title">检查点</h2></div><span id="checkpoint-count" class="subtle-count">0 个文件</span></div>
+          <div class="table-scroll"><table><thead><tr><th>文件 / 类型</th><th>步数</th><th>大小</th><th>保存时间</th></tr></thead><tbody id="checkpoint-rows"><tr><td colspan="4" class="table-empty">尚无已保存的检查点</td></tr></tbody></table></div>
+          <p class="card-footnote">继续训练会恢复最近保存的检查点。这里只展示文件状态。</p>
+        </section>
+      </div>
+
+      <aside class="side-column">
+        <section class="card control-card" aria-labelledby="control-title">
+          <div class="card-heading"><div><p class="section-label">TRAINING CONTROL</p><h2 id="control-title">继续学习</h2></div><span class="corner-mark">↗</span></div>
+          <form id="training-form">
+            <label for="target-steps">累计目标步数</label><input id="target-steps" name="steps" type="number" value="10000" min="1" max="1000000" step="1" required inputmode="numeric"><p class="field-help">填写总目标，而不是本次追加的步数。</p>
+            <div class="input-pair"><div><label for="batch-size">批大小</label><input id="batch-size" name="batch_size" type="number" value="4" min="1" max="16" step="1" required inputmode="numeric"></div><div><label for="accum">梯度累积</label><input id="accum" name="accum" type="number" value="2" min="1" max="32" step="1" required inputmode="numeric"></div></div>
+            <p id="effective-batch" class="field-help">每次更新使用 8 个样本。更大的批次会占用更多显存。</p>
+            <label for="training-data">训练数据</label><select id="training-data" name="data" disabled><option value="">正在读取可用数据</option></select><p id="data-help" class="field-help">由本地数据准备状态决定可选项。</p>
+            <button id="start-button" class="button primary" type="submit" disabled><span id="start-label">继续训练</span><span>→</span></button>
+            <button id="pause-button" class="button secondary" type="button" disabled><span id="pause-label">保存并暂停</span><span>Ⅱ</span></button>
+          </form>
+          <p id="control-hint" class="control-hint">开始时默认恢复最近检查点；暂停会等待当前更新完成并保存。</p>
+        </section>
+
+        <section class="card details-card" aria-labelledby="runtime-title"><div class="card-heading compact-heading"><h2 id="runtime-title">运行与数据</h2><span class="tiny-square"></span></div><dl class="detail-list"><div><dt>模型参数</dt><dd id="parameters-value">—</dd></div><div><dt>设备</dt><dd id="device-value">—</dd></div><div><dt>原生分辨率</dt><dd id="resolution-value">—</dd></div><div><dt>训练进程</dt><dd id="pid-value">—</dd></div><div><dt>数据版本</dt><dd id="data-version">—</dd></div><div><dt>训练 / 验证</dt><dd id="data-counts">—</dd></div><div><dt>提示词训练</dt><dd id="caption-training-value">原始描述</dd></div><div><dt>状态样本概率</dt><dd id="state-sampling-value">—</dd></div><div><dt>区域损失权重</dt><dd id="region-training-value">—</dd></div></dl><p id="caption-training-note" class="path-note" hidden>表达覆盖增强，实际效果仍需对照样张</p><p id="data-path" class="path-note"></p><div class="hardware-divider"></div><div class="hardware-readings"><div><span>温度</span><strong id="gpu-temperature">—</strong></div><div><span>功耗</span><strong id="gpu-power">—</strong></div></div><div class="memory-track"><div id="memory-fill"></div></div><p id="memory-caption" class="field-help">等待 GPU 显存信息</p></section>
+
+        <section class="card validation-card" aria-labelledby="validation-title"><div class="card-heading compact-heading"><h2 id="validation-title">最近验证</h2><span id="validation-state" class="subtle-count">尚无记录</span></div><p id="validation-summary" class="muted">训练损失和验证指标都需要结合真实生成图像判断。</p><details id="validation-details" hidden><summary>查看已有验证记录</summary><pre id="validation-json"></pre></details><p id="state-validation-summary" class="muted">尚无同类相反状态的独立验证记录。</p><details id="state-validation-details" hidden><summary>查看独立状态验证</summary><pre id="state-validation-json"></pre></details></section>
+      </aside>
+    </div>
+
+    <section class="card logs-card" aria-labelledby="logs-title"><div class="card-heading"><div><p class="section-label">LIVE LOG</p><h2 id="logs-title">最近日志</h2></div><span class="subtle-count">最多 30 条</span></div><pre id="training-logs" tabindex="0" aria-label="最近训练日志">等待训练日志…</pre></section>
+    <footer><span>cemivoAI · 本地训练</span><span>每 2 秒同步状态，所有操作由你发起。</span></footer>
+  </main>
+  <div id="toast-region" class="toast-region" role="status" aria-live="polite"></div>
+</body>
+</html>

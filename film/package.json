@@ -1,0 +1,16 @@
+{
+  "name": "cemivoai-ai-driven-interface-film",
+  "version": "1.0.0",
+  "private": true,
+  "description": "42-second original Canvas product film with real recorded cemivoAI output",
+  "license": "MIT",
+  "scripts": {
+    "preview": "node render.cjs --preview",
+    "render": "node render.cjs",
+    "audio": "node make-audio.cjs",
+    "audit": "node audit-film.cjs"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "0.1.100"
+  }
+}
