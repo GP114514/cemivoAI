@@ -374,13 +374,20 @@ class TrainingControl:
                 self.loss_pending = lines.pop()
                 for line in lines:
                     try:
-                        entry = json.loads(line)
+                        # A power interruption can leave NUL padding at the old
+                        # append position. Do not discard the first intact JSON
+                        # entry subsequently written after that padding.
+                        entry = json.loads(line.lstrip('\x00'))
                         if isinstance(entry.get("step"), int) and isinstance(entry.get("loss"), (int, float)):
                             self.loss_rows[entry["step"]] = {key: entry.get(key) for key in
                                 ("step", "loss", "elapsed_seconds", "step_seconds")}
                     except ValueError:
                         continue
-                points = sorted(self.loss_rows.values(), key=lambda row: row["step"])
+                # An interrupted run may have logged unsaved optimizer steps.
+                # Do not present those future points ahead of a resumed run.
+                current = self.training().get('step')
+                points = sorted((row for row in self.loss_rows.values()
+                    if type(current) is not int or row['step']<=current), key=lambda row: row["step"])
                 stride = max(1, math.ceil(len(points) / 800))
                 sampled = points[::stride]
                 if points and sampled[-1]["step"] != points[-1]["step"]:
@@ -435,6 +442,7 @@ class TrainingControl:
                 "checkpoints": files, "loss_history": self.history(),
                 "validation": read_json(self.directory / "validation" / "latest.json", None) or None,
                 "state_validation": read_json(self.directory / "validation" / "state-latest.json", None) or None,
+                "app_flow_validation": read_json(self.directory / "validation" / "app-flow-latest.json", None) or None,
                 "logs": self.log_tail()}
 
     def pause(self):

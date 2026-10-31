@@ -283,6 +283,13 @@
       ? `第 ${fmt(stateValidation.checkpoint_step)} 步 · ${fmt(stateValidation.pairs)} 对状态样本。原描述差值 ${margin(stateValidation.state_roi?.wrong_minus_correct_mse)}，自然描述差值 ${margin(stateValidation.state_roi?.natural_wrong_minus_natural_mse)}，文字区域差值 ${margin(stateValidation.text_roi?.natural_wrong_minus_natural_mse)}。差值是错误描述损失减正确描述损失；负值表示该项未显示有效状态区分，正值也不代表画面或文字合格。`
       : '尚无同类相反状态的独立验证记录。');
     setText('state-validation-json', stateValidation ? JSON.stringify(stateValidation, null, 2) : '');
+    const flowValidation = data.app_flow_validation || stateValidation?.app_flows;
+    if (flowValidation) {
+      $('state-validation-details').hidden = false;
+      const base = stateValidation ? $('state-validation-summary').textContent : '';
+      setText('state-validation-summary', `${base} 笔记／待办状态流：第 ${fmt(flowValidation.checkpoint_step ?? stateValidation?.checkpoint_step)} 步，${fmt(flowValidation.pairs)} 对转移；英文差值 ${margin(flowValidation.state_roi?.en_margin)}，中文差值 ${margin(flowValidation.state_roi?.zh_margin)}。仅为相同布局、相反状态的损失诊断，不代表生成画面合格。`);
+      setText('state-validation-json', JSON.stringify({legacy:stateValidation,app_flows:flowValidation}, null, 2));
+    }
     setText('last-update', `同步于 ${date(Date.now())}`);
     updateButtons();
   }

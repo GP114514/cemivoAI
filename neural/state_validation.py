@@ -124,7 +124,10 @@ def validate_state_conditioning(model,dataset,resolution,device,amp_enabled=True
         def summary(region,time=None):
             rows=[record[region] for record in records if record[region] is not None and (time is None or record['t']==time)]
             return ({key:float(np.mean([row[key] for row in rows])) for key in rows[0]} if rows else None)
+        from .app_flow_validation import validate_app_flows
+        app_flows=validate_app_flows(model,dataset,resolution,device,amp_enabled)
         return {'pairs':len(selected),'examples':len(selected)*2,'evaluations':len(records),
+            'app_flows':app_flows,
             'actions':sorted({item[1] for item in selected}),'native_size':resolution,
             'metric_kind':'same-family opposite-state conditioning diagnostic','quality_accepted':False,
             'caption_conditions':list(_CONDITIONS),'seed':seed,
@@ -147,3 +150,7 @@ def write_state_validation(directory,report,step):
     report=dict(report,checkpoint_step=int(step))
     atomic_json(directory/f'state-step-{step:08}.json',report)
     atomic_json(directory/'state-latest.json',report)
+    if report.get('app_flows') is not None:
+        flow=dict(report['app_flows'],checkpoint_step=int(step))
+        atomic_json(directory/f'app-flow-step-{step:08}.json',flow)
+        atomic_json(directory/'app-flow-latest.json',flow)

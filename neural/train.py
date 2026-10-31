@@ -47,6 +47,16 @@ def resolve_edge_weight(value, checkpoint=None):
     return validate_edge_weight(value)
 
 
+def resolve_lr_decay_steps(value, target_steps, checkpoint=None):
+    """Extending the stop target must not silently restart cosine LR decay."""
+    if value is None:
+        previous=(checkpoint or {}).get('training_args',{})
+        value=previous.get('lr_decay_steps') or previous.get('steps') or target_steps
+    if type(value) is not int or value<1:
+        raise ValueError('lr-decay-steps must be a positive integer')
+    return value
+
+
 def resolve_caption_dropout(value, checkpoint=None):
     """Explicit CLI value wins; resume inherits; new/older runs use 0.1."""
     if value is None:
@@ -449,6 +459,7 @@ def train(args):
                 config.gradient_checkpointing=not args.no_checkpointing
             else:
                 config=ModelConfig(base_channels=args.base_channels,time_dim=args.base_channels*4,text_dim=args.text_dim,text_layers=args.text_layers,text_heads=args.text_heads,gradient_checkpointing=not args.no_checkpointing)
+        args.lr_decay_steps=resolve_lr_decay_steps(getattr(args,'lr_decay_steps',None),args.steps,loaded)
         if args.caption_augment is None:
             args.caption_augment=float(loaded.get("training_args",{}).get("caption_augment",0.0) or 0.0) if loaded else 0.6
         if not 0<=args.caption_augment<=1 or not math.isfinite(args.caption_augment):
@@ -499,7 +510,7 @@ def train(args):
             batch_exposure=[]
             # A short LR warmup is independent from the resolution warmup.
             warmup=min(1.0,(step+1)/max(args.lr_warmup_steps,1))
-            progress=min(1.0,step/max(args.steps,1))
+            progress=min(1.0,step/args.lr_decay_steps)
             lr=args.lr*warmup*(0.2+0.8*0.5*(1+math.cos(math.pi*progress)))
             for group in optimizer.param_groups:
                 group["lr"]=lr
@@ -616,6 +627,8 @@ def main():
     parser.add_argument("--lr",type=float,default=1e-4)
     parser.add_argument("--weight-decay",type=float,default=1e-4)
     parser.add_argument("--lr-warmup-steps",type=int,default=100)
+    parser.add_argument('--lr-decay-steps',type=int,default=None,
+        help='Cosine decay horizon; resume inherits the saved horizon independently of the stop target')
     parser.add_argument("--resolution",type=int,default=256)
     parser.add_argument("--warmup-resolution",type=int,default=128)
     parser.add_argument("--warmup-steps",type=int,default=500)
