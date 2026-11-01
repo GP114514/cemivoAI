@@ -23,5 +23,12 @@ class DshContractTests(unittest.TestCase):
   self.assertNotIn('abcdefghi',redact('sk-abcdefghijklmno'))
   with self.assertRaises(ValueError):json_answer('[]')
 
-if __name__=='__main__':unittest.main()
+ def test_capability_metadata_excludes_adapter_credentials(self):
+  event={'method':'session.event','params':{'sessionId':'owned','event':{'type':'request/header',
+   'data':{'header':{'config':{'apiKey':'private-value'},'adapterDefaults':{'secret':'private-value'},
+    'tools':[{'name':'read','description':'not retained','parameters':{}}]}}}}}
+  result=public_notification(event)
+  self.assertEqual(result['params']['event']['data'],{'names':['read']})
+  self.assertNotIn('private-value',str(result))
 
+if __name__=='__main__':unittest.main()
