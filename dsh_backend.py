@@ -1,9 +1,11 @@
 """DSH is the planner/executor; cemivoAI remains the neural pixel renderer."""
 import base64
 import json
+import time
 import uuid
+from copy import deepcopy
 from pathlib import Path
-from dsh_bridge import DshBridge,DshError,result_text
+from dsh_bridge import DshBridge,DshError,DshPending,result_text
 
 def json_answer(text):
     text=text.strip()
@@ -20,10 +22,13 @@ class DshBackend:
         self.bridge=DshBridge(self.workspace);self.planner_bridge=DshBridge(self.workspace,planning=True);self.verified=False
 
     def configure(self):
+        pending=self.bridge.unsettled_session or self.planner_bridge.unsettled_session
+        if pending:raise DshPending(pending)
         try:
             self.planner_bridge.start()
             probe=self.planner_bridge.prompt([{'type':'text','text':'Capability handshake only. Do not use tools. Reply only with JSON {"ready":true}.'}],timeout=60)
-            result_text(probe)
+            if json_answer(result_text(probe)).get('ready') is not True:
+                raise DshError('DSH planning readiness handshake failed')
             rosters=[e['params']['event']['data']['names'] for e in probe['events']
                 if e.get('params',{}).get('event',{}).get('type')=='capability/tools']
             if not rosters or any(rosters):raise DshError('Planning profile must expose zero tools')
@@ -65,11 +70,22 @@ class DshBackend:
         # and exhaust its output budget after completing the actual work.
         instruction=('Execute only the explicit user workspace task below with your DSH tools. '
             'Do not edit UI images, application code or training files: cemivoAI handles the screen separately. '
-            'Read an existing file before overwriting it. Use native read/write/edit for text files; '
-            'do not use shell commands to verify text already read back. Do not delegate. '
+            'For text-file tasks use ONLY native glob/read/write/edit tools, never bash/pwsh/shell or skills. '
+            'First glob the exact target filename to check existence; read it if it exists before writing. '
+            'Then write and read back the content once. Do not use shell to list, inspect or verify text files. '
+            'Do not repair permissions/ACLs, request escalation, change sandbox policy, install packages or delegate. '
+            'If native access is denied, stop and report the actual failure; do not try another access route. '
             'Preserve DSH sandbox and approvals. Finish with ONLY JSON {"answer":"brief actual result"}. '
             'Never claim a failed operation succeeded. Interaction context:\n')
         receipts={}
+        def save_receipts():
+            # Late tool results belong to the original request. In particular,
+            # they must not change a returned pending/failure record to running.
+            saved=agent.journal.get(request_id)
+            if saved and saved['status']!='running':
+                saved['tools']=deepcopy(progress['tools'])
+                agent.journal.save(request_id,saved['status'],saved)
+            else:agent.journal.save(request_id,'running',progress)
         def observe(message):
             e=message.get('params',{}).get('event',{});data=e.get('data',{})
             if e.get('type')=='tool/call':
@@ -80,21 +96,48 @@ class DshBackend:
                 receipt={'name':'DSH:'+str(data.get('name','tool')),'arguments':arguments,
                     'operation_id':'dsh:'+call,'status':'pending','result':None,'backend':'dsh'}
                 receipts[call]=receipt;progress['tools'].append(receipt)
-                agent.journal.save(request_id,'running',progress)
+                save_receipts()
             elif e.get('type')=='tool/result':
                 tool=data.get('message',{});receipt=receipts.get(tool.get('toolCallId'))
                 if receipt is None:return
                 text='\n'.join(b.get('text','') for b in tool.get('content',[]) if b.get('type')=='text')
                 ok=not tool.get('isError',False)
                 receipt.update(status='complete' if ok else 'failed',result={'ok':ok,'output':text[:12000],'backend':'dsh'})
-                agent.journal.save(request_id,'running',progress)
+                save_receipts()
+        def settled_late(result,error,settled):
+            # The synchronous owner writes its response before this observer
+            # resolves the journal. No new tools or background redraws occur.
+            while agent.active_request_id==request_id:time.sleep(.02)
+            saved=agent.journal.get(request_id)
+            if not saved:return
+            saved['tools']=deepcopy(progress['tools']);saved['dsh_pending']=not settled
+            status='awaiting_result'
+            warning='DSH 仍未确认结束，不能重复提交这次任务；请在 DSH 中核对该会话。'
+            if settled:
+                status='interrupted';saved['dsh_background_finished']=True
+                warning='DSH 执行进程已结束，部分结果仍可能未确认；请核对实际工具记录，不会自动重试。'
+                if result is not None:
+                    try:
+                        answer=json_answer(result_text(result)).get('answer')
+                        if not isinstance(answer,str) or not answer.strip():raise ValueError('Missing answer')
+                        saved['answer']=answer.strip()[:2000];status='render_failed'
+                        warning='DSH 后台回合已结束，实际工具记录已更新；本次未重新绘图，请核对结果后继续。'
+                    except (DshError,ValueError,TypeError):
+                        warning='DSH 后台回合已结束但未成功完成；实际工具记录已更新，不会自动重试。'
+            saved['warning']=warning
+            if isinstance(saved.get('response'),dict):
+                from agent_runtime import business_status
+                saved['response']['agent'].update(status=status,tools=deepcopy(saved['tools']),
+                    answer=saved.get('answer',''),warning=warning,dsh_pending=not settled,
+                    business_status=business_status(saved['tools']))
+            agent.journal.save(request_id,status,saved)
         progress['rounds']=1
         session_id='cemivo-graphics-'+uuid.uuid4().hex
         progress['dsh_session_id']=session_id
         agent.journal.save(request_id,'running',progress)
         try:
             result=self.bridge.prompt([{'type':'text','text':instruction+'\nInteraction data:\n'+json.dumps(context,ensure_ascii=False)},
-                {'type':'image','data':base64.b64encode(png).decode('ascii'),'mimeType':'image/png'}],session_id=session_id,timeout=100,on_event=observe)
+                {'type':'image','data':base64.b64encode(png).decode('ascii'),'mimeType':'image/png'}],session_id=session_id,timeout=100,on_event=observe,on_settled=settled_late)
             final=json_answer(result_text(result));answer=final.get('answer')
             if not isinstance(answer,str) or not answer.strip() or len(answer)>2000:raise ValueError('Missing DSH answer')
             progress['answer']=answer.strip()
@@ -119,5 +162,9 @@ class DshBackend:
                 plan['dsh_result_bounds']=result_bounds
             self.verified=True
             return plan
+        except DshPending as error:
+            progress['dsh_pending']=True
+            progress['dsh_session_id']=error.session_id
+            raise LiveError('DSH 任务仍在等待结果，暂不接受新的业务任务；不会自动重试。','dsh_pending',202) from None
         except (DshError,ValueError,KeyError,TypeError) as error:
             raise LiveError('DSH 未完成本次执行或画面计划；实际工具记录已保留。 '+str(error)[:220],'dsh_execution',502) from None

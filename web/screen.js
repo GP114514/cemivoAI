@@ -83,11 +83,13 @@
     if(uncertain){message("上次任务结果待确认，正在继续查询；这次没有重复发送。",true);updateHelp();return false;}
     if(frame&&(source.session_id!==frame.session_id||source.version!==frame.version||source.sha256!==frame.sha256||source.image_url!==frame.image_url)){message("画面已变化，文字已保留，请重新右键选择位置。");return false;}
     const id=crypto.randomUUID(),stamp=++epoch;beginOperation("已收到，正在理解你的操作","action");form.hidden=true;anchor=null;if(feedback)clickFeedback(feedback);remember(draftKey,text.value);remember(requestKey,id);let received=false;
-    try{const result=await api("/api/agent/event",{session_id:source.session_id,version:source.version,request_id:id,interaction_mode:"auto",event});received=true;remember(requestKey,null);await display(result,stamp);const status=result.agent?.status;
+    try{const result=await api("/api/agent/event",{session_id:source.session_id,version:source.version,request_id:id,interaction_mode:"auto",event});received=true;await display(result,stamp);const status=result.agent?.status;
+      if(status==='awaiting_result'){uncertain=id;remember(requestKey,id);resultMessage(result.agent.warning||'DSH 仍在处理，正在查询真实结果；不会重复提交。',true);updateHelp();return false;}
+      remember(requestKey,null);
       if(["render_failed","partial_failure","interrupted","needs_input"].includes(status)){resultMessage(result.agent.warning||result.agent.answer||"本次没有完成，原文字已保留。",true);return false;}
       if(status==="preview"){resultMessage(result.agent.warning||"已显示待确认预览，文字已保留。",true);return true;}
       resultMessage(result.sha256===source.sha256?(result.state?.notice||result.plan?.intent||"当前画面保持不变"):(result.plan?.expected_change||"画面已更新"));return true;
-    }catch(error){const definite=["busy","stale_frame","frame_expired","session_missing","invalid_session","session_expired","invalid_event","invalid_request","planner_not_configured","invalid_config"].includes(error.code);
+    }catch(error){const definite=["busy","dsh_busy","stale_frame","frame_expired","session_missing","invalid_session","session_expired","invalid_event","invalid_request","planner_not_configured","invalid_config"].includes(error.code);
       if(!received&&!definite){uncertain=id;resultMessage("执行结果暂未确认，正在查询；不会重复发送。",true);}
       else{remember(requestKey,null);if(error.code==="planner_not_configured")plannerConfigured=false;resultMessage(error.message||"操作未完成，文字已保留。",true);}updateHelp();return false;
     }finally{endOperation();void sync();}
@@ -108,7 +110,8 @@
     try{const key=setupKey.value.trim();if(setupBackend.value==='dsh'){
         const host=await api('/api/status');
         if(host.dsh_graphics_protocol!==1)throw new Error('APP 后台仍为旧版，请重新启动后台后再连接 DSH。训练无需停止。');
-        put(setupEnter,'正在连接 DSH…');const configured=await api('/api/live/config',{backend:'dsh'});plannerConfigured=configured.configured===true;
+        put(setupEnter,'正在连接 DSH…');const configured=await api('/api/live/config',{backend:'dsh'});plannerConfigured=configured.configured===true&&configured.verified===true&&configured.backend==='dsh';
+        if(!plannerConfigured)throw new Error('DSH 连接尚未通过验证，请检查本机 DSH 配置后重试。');
       }else if(key){await api("/api/live/config",{backend:'deepseek',api_key:key,base_url:"https://api.deepseek.com",model:"deepseek-flash"});plannerConfigured=true;setupKey.value="";}
       else{const status=await api("/api/live/status");plannerConfigured=status.planner?.configured===true&&status.planner?.backend!=='dsh';}
       if(!plannerConfigured){put(setupError,"请先填写 DeepSeek API Key。");setupKey.focus();return;}

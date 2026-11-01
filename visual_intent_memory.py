@@ -186,8 +186,8 @@ class Memory:
     def observe(self, previous, frame, png, plan, event):
         """Learn/update only a committed, successful local neural text frame.
 
-        message_area_bounds must originate in a full-image AI send plan. It is
-        layout context only, never an instruction to erase that rectangle.
+        The message area originates in a full-image AI send plan or its DSH-
+        generated panel after that Send is verified. It is never an erase mask.
         """
         try:
             key = self._key(frame)
@@ -233,6 +233,9 @@ class Memory:
                 if not internal:
                     record['send_trigger'] = trigger.copy()
                     area = plan.get('message_area_bounds')
+                    if area is None and frame.get('generator')=='dsh_layout_neural_surface':
+                        from neural.layout_surface import text_interior
+                        area=text_interior(frame,'send',edit['text_bounds'])
                     if area is not None:
                         if (not self._box(area, frame) or (area[2]-area[0])*(area[3]-area[1])*2 > frame['width']*frame['height']
                                 or not _contains(area, edit['text_bounds']) or _overlap(area, composer)

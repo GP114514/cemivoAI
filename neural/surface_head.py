@@ -40,6 +40,27 @@ class SurfaceHead(nn.Module):
         return np.concatenate(([float(chrome)], rng.uniform(-1, 1, 4))).astype(np.float32)
 
     @torch.inference_mode()
+    def predict_rectangles(self, boxes):
+        """Decode arbitrary validated AI-supplied bounds with learned pixels."""
+        if not isinstance(boxes,list) or len(boxes)>12:
+            raise ValueError('expected at most twelve neural rectangles')
+        for box in boxes:
+            if (not isinstance(box,list) or len(box)!=4 or any(type(v) is not int for v in box)
+                    or not 0<=box[0]<box[2]<=256 or not 0<=box[1]<box[3]<=256):
+                raise ValueError('invalid neural rectangle bounds')
+        device = next(self.parameters()).device
+        yy, xx = torch.meshgrid(torch.arange(256, device=device), torch.arange(256, device=device), indexing='ij')
+        # A learned exterior prediction supplies the canvas, including padding.
+        blank = 1-self.pixel(torch.full((1, 4), -2., device=device)).sigmoid()
+        image = blank.expand(256, 256).clone()
+        for x0,y0,x1,y1 in boxes:
+            features = torch.stack((xx-x0, x1-1-xx, yy-y0, y1-1-yy), dim=-1).float().clamp(-2, 2)
+            layer = (1-self.pixel(features.reshape(-1, 4)).sigmoid()).reshape(256, 256)
+            image = torch.minimum(image, layer)
+        pixels = image.mul(255).round().clamp(0, 255).to(torch.uint8).cpu().numpy()
+        return pixels
+
+    @torch.inference_mode()
     def predict(self, seed=42, chrome=False):
         device = next(self.parameters()).device
         condition = torch.from_numpy(self.conditioning(seed, chrome)).to(device)
@@ -51,18 +72,7 @@ class SurfaceHead(nn.Module):
                 raise ValueError('neural layout predicted invalid native bounds')
             if x1-x0 < (54 if index == 0 else 36) or y1-y0 < 18:
                 raise ValueError('neural layout cannot contain its native text cells')
-        yy, xx = torch.meshgrid(torch.arange(256, device=device), torch.arange(256, device=device), indexing='ij')
-        # A learned exterior prediction supplies the canvas, including padding.
-        blank = 1-self.pixel(torch.full((1, 4), -2., device=device)).sigmoid()
-        image = blank.expand(256, 256).clone()
-        for index in selected:
-            if index == 0:
-                continue
-            x0, y0, x1, y1 = boxes[index]
-            features = torch.stack((xx-x0, x1-1-xx, yy-y0, y1-1-yy), dim=-1).float().clamp(-2, 2)
-            layer = (1-self.pixel(features.reshape(-1, 4)).sigmoid()).reshape(256, 256)
-            image = torch.minimum(image, layer)
-        pixels = image.mul(255).round().clamp(0, 255).to(torch.uint8).cpu().numpy()
+        pixels=self.predict_rectangles([boxes[index] for index in selected if index!=0])
         return pixels, {ROLES[index]: boxes[index] for index in selected}
 
 

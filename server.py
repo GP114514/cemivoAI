@@ -26,7 +26,7 @@ import console_events
 
 ROOT = Path(__file__).resolve().parent
 CHECKPOINTS = ROOT / "neural" / "checkpoints"
-VERSION = "2.12.0-dsh-experimental"
+VERSION = "2.12.1-dsh-experimental"
 
 
 @contextmanager

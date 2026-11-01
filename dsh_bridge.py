@@ -15,6 +15,14 @@ def redact(value):
 
 class DshError(RuntimeError):pass
 
+class DshTimeout(DshError):pass
+
+class DshPending(DshError):
+    """An admitted turn still owns the bridge; never enqueue a replacement."""
+    def __init__(self, session_id):
+        self.session_id=session_id
+        super().__init__('DSH session '+session_id+' is still awaiting its result; no new prompt was sent.')
+
 class DshBridge:
     def __init__(self, root, executable=None, planning=False):
         self.root=Path(root).resolve()
@@ -23,7 +31,7 @@ class DshBridge:
         self.process=None;self.pending={};self.events=[];self.lock=threading.RLock();self.write_lock=threading.Lock()
         self.stderr=[];self.initialized=False;self.active_session=None
         self.start_lock=threading.RLock();self.prompt_lock=threading.Lock()
-        self.on_event=None
+        self.on_event=None;self.unsettled_session=None
 
     def start(self, provider='deepseek-official', model='deepseek-flash'):
         with self.start_lock:return self._start(provider,model)
@@ -54,14 +62,10 @@ class DshBridge:
                         waiter=self.pending.get(message['id'])
                         if waiter:waiter.put(message)
                     elif 'method' in message:
-                        message=public_notification(message)
-                        if message is None:continue
-                        self.events.append(message)
-                        if self.on_event:
-                            try:self.on_event(message)
-                            except Exception:pass
-                        if len(self.events)>2000:self.events=self.events[-2000:]
-                for waiter in list(self.pending.values()):waiter.put({'error':{'message':'DSH process exited'}})
+                        self._notification(message,process)
+                with self.lock:
+                    if self.process is process:
+                        for waiter in list(self.pending.values()):waiter.put({'error':{'message':'DSH process exited'}})
             def errors():
                 for line in process.stderr:
                     self.stderr.append(redact(line.strip()));self.stderr=self.stderr[-20:]
@@ -73,6 +77,18 @@ class DshBridge:
         except Exception:
             self.close();raise
 
+    def _notification(self, message, process):
+        message=public_notification(message)
+        if message is None:return
+        with self.lock:
+            if self.process is not process:return
+            self.events.append(message)
+            callback=(self.on_event if message.get('params',{}).get('sessionId')==self.active_session else None)
+            if len(self.events)>2000:self.events=self.events[-2000:]
+        if callback:
+            try:callback(message)
+            except Exception:pass
+
     def call(self, method, params=None, timeout=60):
         if not self.process or self.process.poll() is not None:raise DshError('DSH is not running')
         identity='cemivo_'+uuid.uuid4().hex;waiter=queue.Queue();self.pending[identity]=waiter
@@ -81,24 +97,61 @@ class DshBridge:
                 self.process.stdin.write(json.dumps({'jsonrpc':'2.0','id':identity,'method':method,'params':params or {}},ensure_ascii=False)+'\n')
                 self.process.stdin.flush()
             try:response=waiter.get(timeout=timeout)
-            except queue.Empty:raise DshError('DSH request timed out; it was not automatically resent.') from None
+            except queue.Empty:raise DshTimeout('DSH request timed out; it was not automatically resent.') from None
             if 'error' in response:raise DshError(redact(response['error'].get('message','DSH SDK failure')))
             return response.get('result',{})
         finally:self.pending.pop(identity,None)
 
-    def prompt(self, blocks, session_id=None, timeout=120, on_event=None):
+    def _result(self, session_id, message_id):
+        with self.lock:
+            events=[m for m in self.events if m.get('params',{}).get('sessionId')==session_id]
+        return {'session_id':session_id,'message_id':message_id,'events':events}
+
+    def _watch_pending(self, session_id, message_id, on_settled):
+        # This is observation of the SAME admitted session, never another prompt.
+        # The SDK has no per-prompt cancellation method. Keep its ownership and
+        # late tool receipts until session/wait confirms quiescence.
+        def watch():
+            result=None;error=None;settled=False
+            try:
+                self.call('session/wait',{'sessionId':session_id},3600)
+                result=self._result(session_id,message_id);settled=True
+            except DshTimeout as exc:error=exc
+            except DshError as exc:
+                error=exc
+                settled=not self.process or self.process.poll() is not None
+            try:
+                if on_settled:on_settled(result,error,settled)
+            finally:
+                with self.lock:
+                    if settled and self.unsettled_session==session_id:
+                        self.unsettled_session=None;self.active_session=None;self.on_event=None
+        threading.Thread(target=watch,daemon=True).start()
+
+    def prompt(self, blocks, session_id=None, timeout=120, on_event=None, on_settled=None):
         with self.prompt_lock:
+            if self.unsettled_session:raise DshPending(self.unsettled_session)
             self.start();session_id=session_id or 'cemivo-graphics-'+uuid.uuid4().hex
             # Unique sessions isolate each accepted interaction; repeated UI
             # requests are deduplicated by the application's durable journal.
             self.active_session=session_id
             self.on_event=on_event
+            admitted=None
             try:
                 admitted=self.call('session/prompt',{'sessionId':session_id,'contentBlocks':blocks},30)
-                self.call('session/wait',{'sessionId':session_id},timeout)
-                events=[m for m in self.events if m.get('params',{}).get('sessionId')==session_id]
-                return {'session_id':session_id,'message_id':admitted.get('messageId'),'events':events}
-            finally:self.on_event=None
+                try:self.call('session/wait',{'sessionId':session_id},timeout)
+                except DshTimeout:
+                    self.unsettled_session=session_id
+                    self._watch_pending(session_id,admitted.get('messageId'),on_settled)
+                    raise DshPending(session_id) from None
+                return self._result(session_id,admitted.get('messageId'))
+            except DshTimeout:
+                # Admission itself is uncertain. Do not start a replacement or
+                # infer non-execution from a missing acknowledgement.
+                self.unsettled_session=session_id
+                raise DshPending(session_id) from None
+            finally:
+                if self.unsettled_session!=session_id:self.on_event=None;self.active_session=None
 
     def close(self):
         process=self.process

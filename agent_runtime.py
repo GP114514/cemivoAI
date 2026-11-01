@@ -59,6 +59,13 @@ def now():
     return datetime.now(timezone.utc).isoformat()
 
 
+def business_status(receipts):
+    statuses=[item.get('status') for item in receipts]
+    return ('not_requested' if not statuses else
+        'failed' if all(value=='failed' for value in statuses) else
+        'complete' if all(value=='complete' for value in statuses) else 'partial')
+
+
 AGENT_SCOPE = """This request also needs adaptive UI editing. proposed_scope is
 a visual proposal, not proof of task completion. Your FINAL JSON must add:
 update_mode: local|global|none, target_type: toggle|other|uncertain, scope_reason:
@@ -149,20 +156,29 @@ class AgentRuntime:
         # process exit. Query its receipt; never execute it during recovery.
         receipts = deepcopy(record.get("tools", []))
         for receipt in receipts:
-            if receipt.get("status") == "pending":
+            if receipt.get("status") == "pending" and receipt.get('backend')!='dsh':
                 saved = self.tools.operation(receipt["operation_id"])
                 if saved is not None:
                     receipt.update(result=saved, status="complete" if saved.get("ok") else "failed")
         status = record["status"]
         warning = record.get("warning")
-        if status == "running" and self.active_request_id != request_id:
+        dsh=getattr(self.live.planner,'dsh_backend',None)
+        owned_pending=bool(dsh is not None and record.get('dsh_session_id') and
+            dsh.bridge.unsettled_session==record.get('dsh_session_id'))
+        if record.get('dsh_pending'):
+            status='awaiting_result' if owned_pending else 'interrupted'
+            if not owned_pending:
+                warning='当前 APP 已无法继续确认原 DSH 会话的结果。请在 DSH 中核对已保存的会话与工具记录；不会自动重复执行。'
+        elif status == "running" and self.active_request_id != request_id:
             status = "interrupted"
             warning = "当前后台已无法确认原任务仍在运行。已提交结果如下，请先核对；不会自动重复执行未确认的操作。"
         available = self._frame_available(record.get("response"))
         if record.get("response") is not None and not available:
             warning = (warning + " " if warning else "") + "业务执行记录仍已保存，但旧界面缓存已失效，请新建会话以继续。"
         return {"request_id": request_id, "status": status, "tools": receipts,
+            "business_status":business_status(receipts),
             "dsh_session_id":record.get('dsh_session_id'),
+            "dsh_pending":bool(record.get('dsh_pending') and owned_pending),
             "answer": record.get("answer", ""), "updated_at": record["updated_at"],
             "warning": warning, "has_saved_frame": available}
 
@@ -305,6 +321,9 @@ class AgentRuntime:
                 raise LiveError("这次任务已开始过，请查询执行记录；不会自动重复执行。", "agent_result_available", 409)
             if not self.live.planner.public()["configured"]:
                 raise LiveError("请先配置 DeepSeek，再启用 Agent。", "planner_not_configured", 409)
+            dsh=getattr(self.live.planner,'dsh_backend',None)
+            if dsh is not None and (dsh.bridge.unsettled_session or dsh.planner_bridge.unsettled_session):
+                raise LiveError('DSH 上次回合仍在等待真实结果，请先核对原任务；本次未提交。','dsh_busy',409)
             with self.live.state_lock:
                 session = self.live._session(data.get("session_id"))
                 if request_id in session.requests:
@@ -345,10 +364,12 @@ class AgentRuntime:
                 else:
                     plan = self._loop(request_id, png, previous, event, history, progress, scope_hint=scope_hint)
             except Exception as error:
-                status = "partial_failure"
+                status = "awaiting_result" if progress.get('dsh_pending') else "partial_failure"
                 progress["answer"] = ("本次任务未完整完成，请查看实际工具记录。" if progress["tools"] else
                     "本次识图或意图理解未完成，没有执行业务工具。请补充一句想完成的操作。")
                 progress["warning"] = str(error) if isinstance(error, LiveError) else "Agent 运行中断，请检查执行记录。"
+                if progress.get('dsh_pending'):
+                    progress['answer']='DSH 仍在处理这次任务，正在等待真实结果；不会重复提交。'
                 if isinstance(error,LiveError) and error.code in ('planner_network','planner_http','planner_response'):
                     progress['answer']='识图服务本次未完成，画面和输入已保留。'
                     if isinstance(getattr(error,'request_diagnostics',None),dict):
@@ -360,10 +381,7 @@ class AgentRuntime:
                     if isinstance(getattr(error,'plan_geometry',None),dict):
                         progress['plan_error']['geometry']=deepcopy(error.plan_geometry)
             agent_ms = (time.perf_counter() - started) * 1000
-            tool_statuses = [item.get('status') for item in progress['tools']]
-            business_status = ('not_requested' if not tool_statuses else
-                'failed' if all(value == 'failed' for value in tool_statuses) else
-                'complete' if all(value == 'complete' for value in tool_statuses) else 'partial')
+            task_business_status = business_status(progress['tools'])
             frame = deepcopy(previous)
             # These prove a particular prior operation, not the pixels of a
             # new whole-frame Agent draw or this task's failed/no-op attempt.
@@ -410,8 +428,8 @@ class AgentRuntime:
                         frame.update(generated, plan=plan)
                         if frame.get('edit', {}).get('preview'):
                             status = 'preview'
-                            failure_note = ('本次所有工具均失败，业务任务未完成。' if business_status == 'failed' else
-                                '本次部分工具失败或未完成，请逐项查看实际结果。' if business_status == 'partial' else '')
+                            failure_note = ('本次所有工具均失败，业务任务未完成。' if task_business_status == 'failed' else
+                                '本次部分工具失败或未完成，请逐项查看实际结果。' if task_business_status == 'partial' else '')
                             progress['warning'] = ' '.join(value for value in
                                 (progress.get('warning'), failure_note, frame['edit']['preview_reason']) if value)
                             if not progress['tools']:
@@ -435,9 +453,10 @@ class AgentRuntime:
                         (not adaptive or plan.get("target_type") == "uncertain") else "complete")
                     if adaptive:
                         frame["scope"] = self.live._scope(plan)
-            if status == "complete" and progress["tools"] and all(item["status"] == "failed" for item in progress["tools"]):
+            if status == "complete" and progress["tools"] and any(item["status"] != "complete" for item in progress["tools"]):
                 status = "partial_failure"
-                progress["warning"] = "本次工具没有成功执行，请检查真实结果后再继续。"
+                progress["warning"] = ("本次工具没有成功执行，请检查真实结果后再继续。" if task_business_status=='failed' else
+                    "本次部分工具失败或结果未确认，请核对真实结果后再继续。")
             if frame.get("recognition") and status in ("partial_failure", "render_failed"):
                 message = progress.get("warning") or progress["answer"]
                 if plan is None and not progress["tools"]:
@@ -453,7 +472,7 @@ class AgentRuntime:
             # without advancing the current frame or polluting UI history.
             # Actual tool results still need a committed frame/receipt even if
             # their following redraw fails; those business changes are durable.
-            commit_frame = not (status in ("render_failed",'partial_failure') and not progress["tools"])
+            commit_frame = status!='awaiting_result' and not (status in ("render_failed",'partial_failure') and not progress["tools"])
             navigation_complete=bool(plan and plan.get('navigation') and status=='complete')
             base_state=deepcopy(frame.get('state',{})) if navigation_complete else deepcopy(previous.get('state',{}))
             frame.update(session_id=previous["session_id"],
@@ -463,9 +482,10 @@ class AgentRuntime:
                     notice=progress.get("warning") or progress["answer"]) if commit_frame else deepcopy(previous["state"])),
                 last_event=(dict(event, label="Agent：" + (plan["intent"] if plan else "请检查执行记录"))
                     if commit_frame else deepcopy(previous["last_event"])))
-            frame["agent"] = {"status": status, "business_status": business_status,
+            frame["agent"] = {"status": status, "business_status": task_business_status,
                 "answer": progress["answer"], "tools": deepcopy(progress["tools"]),
                 "request_id": request_id, "rounds": progress["rounds"], "warning": progress.get("warning"),
+                "dsh_pending":bool(progress.get('dsh_pending')),
                 "render_error_code": progress.get("render_error_code"),
                 "plan_error":progress.get('plan_error'),
                 "planner_error":progress.get('planner_error'),

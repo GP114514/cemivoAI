@@ -166,6 +166,7 @@ class DeepSeekPlanner:
         result=(COMPACT_AUTO if self.responsive_ui else SYSTEM_AUTO)+self._interaction_instruction()
         if self.dsh_backend is not None:
             result+='\nBackend is DSH, with real workspace file/shell tools under its own permissions. Set requires_tools:true for actual tasks beyond visual UI changes, including file creation/reading and project work. Planning never executes these tasks.'
+            result+='\nWhen rendered_elements are supplied, they record this neural page layout. Use their actual bounds to ground geometry, while checking the full screenshot and current ui_state for intent/content. For text_action input, text_bounds and clearing must fit an input interior with 4px padding; for send, new text must fit a panel interior. Preserve every button/input/panel border. One native line is 18px high. Do not place text over the outline.'
         return result
 
     def _vision_stage(self, value):
@@ -283,7 +284,8 @@ class DeepSeekPlanner:
             if self.dsh_backend is not None:
                 return {'provider':'DSH','backend':'dsh','configured':self.dsh_backend.bridge.initialized,
                     'base_url':'local DSH SDK','model':'deepseek-flash','credential_storage':'managed_by_dsh',
-                    'verified':self.dsh_backend.verified,'workspace':str(self.dsh_backend.workspace)}
+                    'verified':self.dsh_backend.verified,'workspace':str(self.dsh_backend.workspace),
+                    'awaiting_result':bool(self.dsh_backend.bridge.unsettled_session or self.dsh_backend.planner_bridge.unsettled_session)}
             return {"provider": "DeepSeek", "configured": bool(self.api_key),
                     "base_url": self.base_url, "model": self.model,
                     "credential_storage": "process_memory", "verified": self.verified}
@@ -291,6 +293,8 @@ class DeepSeekPlanner:
     def configure(self, data):
         if not isinstance(data, dict):
             raise LiveError("设置需要 JSON 对象。", "invalid_config", 422)
+        if self.dsh_backend is not None and (self.dsh_backend.bridge.unsettled_session or self.dsh_backend.planner_bridge.unsettled_session):
+            raise LiveError('DSH 上次回合仍在等待真实结果，请先核对原任务，再切换连接。','dsh_busy',409)
         if data.get('backend')=='dsh':
             from dsh_backend import DshBackend
             from dsh_bridge import DshError
@@ -422,6 +426,8 @@ class DeepSeekPlanner:
                    "state_summary": frame.get("plan", {}).get("state_summary", ""),
                    "recent_interactions": history[-6:]}
         context["visual_evidence"] = evidence
+        if frame.get('generator')=='dsh_layout_neural_surface':
+            context['rendered_elements']=frame.get('neural_layout',{}).get('elements',[])
         payload = {"thinking": {"type": "disabled"},
                    "response_format": {"type": "json_object"}, "max_tokens": 650,
                    "temperature": 0.2, "stream": False,
@@ -494,6 +500,8 @@ class DeepSeekPlanner:
             "state_summary": frame.get("plan", {}).get("state_summary", ""), "ui_state": frame.get("state", {}),
             "recent_interactions": history[-6:],"page_navigation":frame.get('surface_navigation',{})}
         context["visual_evidence"] = evidence
+        if frame.get('generator')=='dsh_layout_neural_surface':
+            context['rendered_elements']=frame.get('neural_layout',{}).get('elements',[])
         self._vision_stage("understanding")
         if context['ui_state'].get('input_text') or context['ui_state'].get('sent_messages'):
             context['optional_interaction_memory']={'when':'local Send only',
@@ -584,6 +592,8 @@ class DeepSeekPlanner:
             "previous_plan": plan, "visual_evidence": evidence,
             "actual_tool_receipts": receipts or [],
             "request": "重新规划可见界面反馈。当前桌面转入应用时必须添加navigation:{action:open_app,target_app:应用名}，global/other/requires_tools:false。任务工具已执行的只展示真实结果，绝不能再次执行。不要无理由保持原图；输入原文必须逐字保留在next_prompt。显式要求不改图或已显示目标状态时才使用none并填具体no_change_reason。"}
+        if frame.get('generator')=='dsh_layout_neural_surface':
+            context['rendered_elements']=frame.get('neural_layout',{}).get('elements',[])
         value = self._toggle_vision(self._auto_instruction(), context, [png] + (focus_images or []))
         from prompt_budget import compact_plan_prompt
         value = compact_plan_prompt(self, value)
@@ -677,6 +687,9 @@ class DeepSeekPlanner:
                 from behavior_regions import contains
                 if not any(contains(outer,bounds) for outer in outers):
                     raise ValueError('text bounds must stay inside the chosen region')
+                if frame.get('generator')=='dsh_layout_neural_surface':
+                    from neural.layout_surface import text_interior
+                    text_interior(frame,plan['text_action'],bounds)
                 plan['text_bounds'] = bounds.copy()
             if value.get('clear_input_bounds') is not None:
                 bounds=value['clear_input_bounds']
@@ -688,6 +701,9 @@ class DeepSeekPlanner:
                 from behavior_regions import contains
                 if not any(contains(outer,bounds) for outer in outers):
                     raise ValueError('clear input outside selected effects')
+                if frame.get('generator')=='dsh_layout_neural_surface':
+                    from neural.layout_surface import text_interior
+                    text_interior(frame,'input',bounds)
                 plan['clear_input_bounds']=bounds.copy()
             if value.get('clear_placeholder_bounds') is not None:
                 bounds=value['clear_placeholder_bounds']
@@ -1082,6 +1098,9 @@ class LiveApp:
             'screen_check':dict(screen_check,repair_attempts=int(rejected is not None),rejected=rejected)}
 
     def _draw_page(self,prompt,seed,steps,goal):
+        if getattr(self.planner,'dsh_backend',None) is not None:
+            from neural.layout_surface import draw_page
+            return draw_page(self,prompt,seed,steps,goal)
         from page_quality import check_page
         png,generated=self._draw(prompt,seed,steps)
         return check_page(self.planner,png,generated,prompt,goal,self._draw)
@@ -1151,6 +1170,10 @@ class LiveApp:
                 try:
                     requested_bounds=plan['text_bounds']
                     outer=next(bounds for bounds in regions if contains(bounds,requested_bounds))
+                    if previous.get('generator')=='dsh_layout_neural_surface':
+                        from neural.layout_surface import text_interior
+                        inner=text_interior(previous,plan['text_action'],requested_bounds)
+                        outer=[max(outer[0],inner[0]),max(outer[1],inner[1]),min(outer[2],inner[2]),min(outer[3],inner[3])]
                     if plan['text_action']=='input' and not previous.get('state',{}).get('input_bounds'):
                         from input_ink_grounding import ground_input_text
                         requested_bounds,input_ink_evidence=ground_input_text(original_png,requested_bounds,outer)
@@ -1213,6 +1236,10 @@ class LiveApp:
                 png,evidence=compose_effect_regions(original_png,candidate,edit)
             else:
                 png, evidence = compose_region(original_png, candidate, edit["bounds"])
+            if plan.get('text_action') in ('input','send') and previous.get('generator')=='dsh_layout_neural_surface':
+                from neural.layout_surface import verify_borders
+                try:verify_borders(original_png,png,previous)
+                except ValueError as error:raise LiveError('文字重绘触及控件边框，原图与草稿已保留。','layout_border',422) from error
         except StableEditError as error:
             raise LiveError("局部编辑范围或像素检查未通过，原图已保留。", "region_unverified", 422) from error
         verify_start = time.perf_counter()
