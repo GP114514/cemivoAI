@@ -26,7 +26,7 @@ import console_events
 
 ROOT = Path(__file__).resolve().parent
 CHECKPOINTS = ROOT / "neural" / "checkpoints"
-VERSION = "2.11.4-experimental"
+VERSION = "2.12.0-dsh-experimental"
 
 
 @contextmanager
@@ -78,6 +78,7 @@ class Studio:
         if self.last_error:
             training = dict(training, error=self.last_error)
         return {"app_id": "cemivoAI.neural", "version": VERSION, "ready": ready,
+                "dsh_graphics_protocol":1,
                 "model": model, "training": training, "preview_step": preview_info.get("step"),
                 "capabilities": {"sampling_steps": [4, 8, 16, 32],
                     "resolutions": [int(model.get("native_width", 256))], "formats": ["png"]},
@@ -260,6 +261,7 @@ class Handler(BaseHTTPRequestHandler):
             elif route == "/api/training/pause":
                 result = self.server.studio.training_control.pause()
             elif route == "/api/live/config":
+                if self.server.studio.sample_lock.locked():raise LiveError('当前任务处理中，请完成后切换后端。','busy',409)
                 result = self.server.studio.live.planner.configure(body)
             elif route == "/api/live/model":
                 result = self.server.studio.live.update_model(body)

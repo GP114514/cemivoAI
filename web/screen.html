@@ -5,9 +5,11 @@
   <section id="setup" aria-label="连接 API">
     <form id="setupForm">
       <h1>cemivoAI</h1><p>连接，然后只留下你的画面。</p>
-      <label for="setupKey">DeepSeek API Key</label>
-      <input id="setupKey" type="password" autocomplete="off" spellcheck="false" placeholder="输入 API Key">
-      <small id="setupHint">密钥仅保存在本次服务内存，不写入磁盘。画面与操作会发送给 API。</small>
+      <label for="setupBackend">执行后端</label>
+      <select id="setupBackend"><option value="dsh">DSH · 图形交互</option><option value="deepseek">DeepSeek API · 独立运行</option></select>
+      <label id="setupKeyLabel" for="setupKey" hidden>DeepSeek API Key</label>
+      <input id="setupKey" type="password" autocomplete="off" spellcheck="false" placeholder="输入 API Key" hidden>
+      <small id="setupHint">使用本机 DSH 已配置的模型和工具。画面与输入交给 DSH，任务在独立工作区执行。</small>
       <button id="setupEnter" type="submit" disabled>正在连接…</button>
       <p id="setupError" role="status"></p>
     </form>

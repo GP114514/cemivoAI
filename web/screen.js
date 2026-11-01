@@ -4,6 +4,13 @@
   const requestKey="cemivoAI.screen.pending",draftKey="cemivoAI.screen.draft",terminal=new Set(["complete","preview","render_failed","partial_failure","needs_input","interrupted"]);
   let entered=false,configuring=false;
   const setup=$("setup"),setupForm=$("setupForm"),setupKey=$("setupKey"),setupEnter=$("setupEnter"),setupError=$("setupError"),setupHint=$("setupHint");
+  const setupBackend=$("setupBackend"),setupKeyLabel=$("setupKeyLabel");
+  function setupLabels(){
+    const dsh=setupBackend.value==='dsh';setupKey.hidden=dsh;setupKeyLabel.hidden=dsh;
+    put(setupEnter,dsh?'连接 DSH 并进入':'连接 API 并进入');
+    put(setupHint,dsh?'使用本机 DSH 已配置的模型与权限。画面和输入交给 DSH，文件任务在独立工作区执行。':'密钥仅保存在本次服务内存，不写入磁盘。画面与操作会发送给 API。');
+  }
+  setupBackend.addEventListener('change',()=>{setupKey.value='';put(setupError,'');setupLabels();});
   let frame=null,busy=false,polling=false,statusPolling=false,anchor=null,composing=false,uncertain=null,noticeTimer=null,pulseTimer=null,epoch=0,desktopAttempted=false,operation=null,plannerConfigured=null,noticeKind="",disconnected=false;
   function readStored(key){try{return sessionStorage.getItem(key);}catch{return null;}}
   function remember(key,value){try{if(value===null)sessionStorage.removeItem(key);else sessionStorage.setItem(key,value);}catch{/* Storage is optional; this page never resends a pending request. */}}
@@ -93,17 +100,21 @@
   if(uncertain){message("正在查询上次操作的结果，不会重复发送。",true);updateHelp();}
   helpLink.addEventListener("click",event=>{if(plannerConfigured===false){event.preventDefault();entered=false;setup.hidden=false;setupKey.focus();}});
   async function connection(){
-    try{const status=await api("/api/live/status");plannerConfigured=status.planner?.configured===true;setupEnter.disabled=false;put(setupEnter,plannerConfigured?"进入画面":"连接并进入");if(plannerConfigured)put(setupHint,"API 已在服务内存中配置。可直接进入，或填写新密钥。");put(setupError,"");}
+    try{const status=await api("/api/live/status");plannerConfigured=status.planner?.configured===true;setupEnter.disabled=false;setupLabels();put(setupError,"");}
     catch{setupEnter.disabled=false;put(setupEnter,"重试连接");put(setupError,"暂时无法连接本地服务，请检查 APP 是否已启动。");}
   }
   setupForm.addEventListener("submit",async event=>{
     event.preventDefault();if(configuring)return;configuring=true;setupEnter.disabled=true;put(setupError,"");
-    try{const key=setupKey.value.trim();if(key){await api("/api/live/config",{api_key:key,base_url:"https://api.deepseek.com",model:"deepseek-flash"});plannerConfigured=true;setupKey.value="";}
-      else{const status=await api("/api/live/status");plannerConfigured=status.planner?.configured===true;}
+    try{const key=setupKey.value.trim();if(setupBackend.value==='dsh'){
+        const host=await api('/api/status');
+        if(host.dsh_graphics_protocol!==1)throw new Error('APP 后台仍为旧版，请重新启动后台后再连接 DSH。训练无需停止。');
+        put(setupEnter,'正在连接 DSH…');const configured=await api('/api/live/config',{backend:'dsh'});plannerConfigured=configured.configured===true;
+      }else if(key){await api("/api/live/config",{backend:'deepseek',api_key:key,base_url:"https://api.deepseek.com",model:"deepseek-flash"});plannerConfigured=true;setupKey.value="";}
+      else{const status=await api("/api/live/status");plannerConfigured=status.planner?.configured===true&&status.planner?.backend!=='dsh';}
       if(!plannerConfigured){put(setupError,"请先填写 DeepSeek API Key。");setupKey.focus();return;}
       entered=true;setup.hidden=true;updateHelp();void sync();
     }catch(error){put(setupError,error.message||"连接未完成，请重试。");}
-    finally{configuring=false;setupEnter.disabled=false;put(setupEnter,plannerConfigured?"进入画面":"连接并进入");}
+    finally{configuring=false;setupEnter.disabled=false;setupLabels();}
   });
   window.addEventListener("beforeunload",()=>{setupKey.value="";});
   void connection();setInterval(sync,1000);

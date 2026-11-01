@@ -162,6 +162,7 @@ class AgentRuntime:
         if record.get("response") is not None and not available:
             warning = (warning + " " if warning else "") + "业务执行记录仍已保存，但旧界面缓存已失效，请新建会话以继续。"
         return {"request_id": request_id, "status": status, "tools": receipts,
+            "dsh_session_id":record.get('dsh_session_id'),
             "answer": record.get("answer", ""), "updated_at": record["updated_at"],
             "warning": warning, "has_saved_frame": available}
 
@@ -175,6 +176,8 @@ class AgentRuntime:
             return self.live.image(image_id) is not None
 
     def _loop(self, request_id, png, previous, event, history, progress, scope_hint=None):
+        if getattr(self.live.planner,'dsh_backend',None) is not None:
+            return self.live.planner.dsh_backend.execute(self,request_id,png,previous,event,history,progress,scope_hint)
         from vision_grounding import VISION_EVIDENCE, prepare_click_view
         evidence, focus_images = prepare_click_view(png, previous, event)
         context = {"screen": {"width": previous["width"], "height": previous["height"],
@@ -384,7 +387,11 @@ class AgentRuntime:
                     render_start = time.perf_counter()
                     try:
                         scope = self.live._scope(plan) if adaptive else None
-                        if plan.get('navigation'):
+                        if plan.get('dsh_result_bounds') and progress['tools']:
+                            from dsh_result import draw_receipt
+                            png,generated=draw_receipt(self.live,png,previous,plan,progress['tools'])
+                            scope={'mode':'local','target_type':'other','reason':'DSH-selected blank result region; actual tool receipt summary'}
+                        elif plan.get('navigation'):
                             png, generated = self.live.navigation.render(previous,png,plan,event,session.frames)
                         elif scope is not None and scope["mode"] == "local":
                             if scope["target_type"] == "toggle":

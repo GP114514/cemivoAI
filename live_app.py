@@ -147,6 +147,7 @@ class DeepSeekPlanner:
         self.model = "deepseek-flash"
         self.api_key = os.environ.get("DEEPSEEK_API_KEY", "").strip()
         self.transport = transport
+        self.dsh_backend = None
         self.verified = False
         self.stage_callback = None
         self.best_effort = bool(best_effort)
@@ -162,7 +163,10 @@ class DeepSeekPlanner:
 
     def _auto_instruction(self):
         from interaction_policy import COMPACT_AUTO
-        return (COMPACT_AUTO if self.responsive_ui else SYSTEM_AUTO)+self._interaction_instruction()
+        result=(COMPACT_AUTO if self.responsive_ui else SYSTEM_AUTO)+self._interaction_instruction()
+        if self.dsh_backend is not None:
+            result+='\nBackend is DSH, with real workspace file/shell tools under its own permissions. Set requires_tools:true for actual tasks beyond visual UI changes, including file creation/reading and project work. Planning never executes these tasks.'
+        return result
 
     def _vision_stage(self, value):
         if callable(self.stage_callback):
@@ -276,6 +280,10 @@ class DeepSeekPlanner:
 
     def public(self):
         with self.lock:
+            if self.dsh_backend is not None:
+                return {'provider':'DSH','backend':'dsh','configured':self.dsh_backend.bridge.initialized,
+                    'base_url':'local DSH SDK','model':'deepseek-flash','credential_storage':'managed_by_dsh',
+                    'verified':self.dsh_backend.verified,'workspace':str(self.dsh_backend.workspace)}
             return {"provider": "DeepSeek", "configured": bool(self.api_key),
                     "base_url": self.base_url, "model": self.model,
                     "credential_storage": "process_memory", "verified": self.verified}
@@ -283,6 +291,15 @@ class DeepSeekPlanner:
     def configure(self, data):
         if not isinstance(data, dict):
             raise LiveError("设置需要 JSON 对象。", "invalid_config", 422)
+        if data.get('backend')=='dsh':
+            from dsh_backend import DshBackend
+            from dsh_bridge import DshError
+            backend=self.dsh_backend or DshBackend(Path(__file__).resolve().parent)
+            try:backend.configure()
+            except DshError as error:raise LiveError(str(error),'dsh_unavailable',503) from None
+            with self.lock:self.dsh_backend=backend
+            return self.public()
+        if data.get('backend','deepseek')!='deepseek':raise LiveError('未知执行后端','invalid_config',422)
         base = data.get("base_url", "https://api.deepseek.com")
         model = data.get("model", "deepseek-flash")
         key = data.get("api_key")
@@ -301,6 +318,8 @@ class DeepSeekPlanner:
                 self.api_key = key
             self.base_url, self.model = base.rstrip("/"), model
             self.verified = False
+            if self.dsh_backend is not None:
+                self.dsh_backend.close();self.dsh_backend=None
         return self.public()
 
     @staticmethod
@@ -327,6 +346,10 @@ class DeepSeekPlanner:
 
     def complete(self, payload, timeout=30):
         """Shared authenticated transport for vision planning and tool use."""
+        if self.dsh_backend is not None:
+            from dsh_bridge import DshError
+            try:return self.dsh_backend.complete(payload,timeout)
+            except (DshError,ValueError) as error:raise LiveError('DSH 规划未完成：'+str(error)[:220],'dsh_planning',502) from None
         with self.lock:
             key, base, model = self.api_key, self.base_url, self.model
         if not key:
