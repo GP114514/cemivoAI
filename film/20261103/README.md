@@ -1,6 +1,6 @@
 # CEMIVO — What if software drew itself?
 
-[CEMIVO software repository](https://github.com/GP114514/cemivoAI) · [Video](renders/CEMIVO-Principle-Animation-EN.mp4)
+[CEMIVO software repository](https://github.com/GP114514/cemivoAI) · [Video](renders/CEMIVO-Principle-Animation-EN.mp4) · [Download the JS project ZIP](CEMIVO-JS-Film-Project-20261103.zip)
 
 Original 30-second English principle animation, made with JavaScript Canvas. 1080 × 1350, 30 fps, H.264 / AAC. It includes animated pointers and click rings, whole-image perception, intent routing, Agent tools, neural layout/surface/text heads, edit masks, subtitles, a generic neural voice, and an original procedural JS score.
 
@@ -48,4 +48,4 @@ The software/training service was not modified or restarted to produce this anim
 🔗 https://github.com/GP114514/cemivoAI
 #AI #GenerativeUI
 
-Do not post the preview as a real-screen recording. Nothing was uploaded or posted by this edition.
+This edition's JS source and preview video are published in this public repository under MIT. X posting is separate. Describe the preview as a principle animation; real APP screen recording is still pending.

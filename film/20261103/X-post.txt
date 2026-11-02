@@ -7,4 +7,4 @@ READY-TO-PUBLISH COPY
 What would you try first? #AI
 
 STATUS
-Prepared, not published. This video is a labelled principle animation, not native APP screen recording.
+Source and video are published on GitHub. The X post has not been submitted. This video is a labelled principle animation, not native APP screen recording.
