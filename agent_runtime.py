@@ -425,6 +425,9 @@ class AgentRuntime:
                                     generated['surface_navigation']=deepcopy(previous['surface_navigation'])
                             if generated['sha256']==previous['sha256']:
                                 raise LiveError('模型没有生成可见变化，原图和草稿已保留。','no_visual_change',422)
+                        # A restored/new page owns its metadata. Merging into
+                        # the old page leaks its layout/receipt into Home/Back.
+                        if plan.get('navigation'):frame=deepcopy(generated)
                         frame.update(generated, plan=plan)
                         if frame.get('edit', {}).get('preview'):
                             status = 'preview'
@@ -477,7 +480,7 @@ class AgentRuntime:
             base_state=deepcopy(frame.get('state',{})) if navigation_complete else deepcopy(previous.get('state',{}))
             frame.update(session_id=previous["session_id"],
                 version=previous["version"] + (1 if commit_frame else 0),
-                state=(dict(base_state,view=base_state.get('view','ai_driven') if navigation_complete else 'agent_workspace',
+                state=(dict(base_state,view=base_state.get('view','ai_driven') if navigation_complete or not progress['tools'] else 'agent_workspace',
                     messages=base_state.get('messages',[]) if navigation_complete else (previous["state"].get("messages", []) + ([{"role": "user", "text": event["text"]}] if event.get("text") else []))[-12:],
                     notice=progress.get("warning") or progress["answer"]) if commit_frame else deepcopy(previous["state"])),
                 last_event=(dict(event, label="Agent：" + (plan["intent"] if plan else "请检查执行记录"))

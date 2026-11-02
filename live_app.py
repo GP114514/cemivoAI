@@ -166,6 +166,7 @@ class DeepSeekPlanner:
         result=(COMPACT_AUTO if self.responsive_ui else SYSTEM_AUTO)+self._interaction_instruction()
         if self.dsh_backend is not None:
             result+='\nBackend is DSH, with real workspace file/shell tools under its own permissions. Set requires_tools:true for actual tasks beyond visual UI changes, including file creation/reading and project work. Planning never executes these tasks.'
+            result+='\nFor an explicit workspace task, ONLY route it to the executor: requires_tools:true, should_update:false, update_mode:none, target_type:other, next_prompt:"", brief intent/expected_change/state_summary/scope_reason. Omit geometry, navigation and text_action. Do not solve the task, discuss tool availability or design its result screen here. The separate executor gets the full original input, screenshot and task state, then plans actual feedback after real tools finish.'
             result+='\nWhen rendered_elements are supplied, they record this neural page layout. Use their actual bounds to ground geometry, while checking the full screenshot and current ui_state for intent/content. For text_action input, text_bounds and clearing must fit an input interior with 4px padding; for send, new text must fit a panel interior. Preserve every button/input/panel border. One native line is 18px high. Do not place text over the outline.'
         return result
 

@@ -236,6 +236,10 @@ class Memory:
                     if area is None and frame.get('generator')=='dsh_layout_neural_surface':
                         from neural.layout_surface import text_interior
                         area=text_interior(frame,'send',edit['text_bounds'])
+                    elif area is not None and frame.get('generator')=='dsh_layout_neural_surface':
+                        from neural.layout_surface import text_interior
+                        inner=text_interior(frame,'send',edit['text_bounds'])
+                        area=[max(area[0],inner[0]),max(area[1],inner[1]),min(area[2],inner[2]),min(area[3],inner[3])]
                     if area is not None:
                         if (not self._box(area, frame) or (area[2]-area[0])*(area[3]-area[1])*2 > frame['width']*frame['height']
                                 or not _contains(area, edit['text_bounds']) or _overlap(area, composer)

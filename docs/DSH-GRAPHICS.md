@@ -1,6 +1,6 @@
 # DSH graphical interaction backend
 
-The `2.12.1-dsh-experimental` source adds a DeepSeek Harness backend. cemivoAI is the image-based interaction surface; DSH interprets the full frame, executes workspace tasks, and supplies authoritative tool receipts. The local cemivoAI models still produce the image pixels. This integration does not replace the DSH desktop application or copy its credential store.
+The `2.12.3-dsh-experimental` source adds a DeepSeek Harness backend. cemivoAI is the image-based interaction surface; DSH interprets the full frame, executes workspace tasks, and supplies authoritative tool receipts. The local cemivoAI models still produce the image pixels. This integration does not replace the DSH desktop application or copy its credential store.
 
 ## Setup
 
@@ -27,6 +27,8 @@ If an admitted execution exceeds the foreground wait, the APP returns `awaiting_
 
 Execution instructions direct text-file tasks to native glob/read/write/edit tools, with an existence check and read-before-overwrite. They prohibit permission repair, escalation attempts and alternate access routes after native access denial. These are model instructions; the DSH sandbox remains the enforcement boundary. Mixed failed or pending tool receipts are reported as partial failure rather than blanket success.
 
+For an explicit workspace task, the no-tool visual preflight only routes the original instruction to the executor (`requires_tools: true`, `update_mode: none`). It does not design a result page or solve the task. The executor still receives the full original screenshot, text, coordinates and state; actual feedback is planned after its tool results. This reduces an observed max-token failure in the preflight without adding automatic task retries.
+
 ### Coherent page drawing in DSH mode
 
 New whole pages in DSH mode use a structured layout planned by DSH and the project's existing random-trained neural border and glyph decoders. DSH chooses every element, label and bound from the goal; there is no per-application page template or button routing map. Geometry, spacing, trained-character coverage and complete text fit are checked before drawing. The top 32 rows remain reserved for the existing neural Home/Back controls. A full-image structural review still checks the delivered page. Click interpretation still uses the actual image and event.
@@ -38,6 +40,8 @@ The preceding direct PixelFlow navigation test correctly identified a Chat click
 For local input/send, the planner receives the actual rendered element bounds as geometry evidence alongside the full screenshot. Text must fit the corresponding input/panel interior with 4px padding. A pixel comparison rejects any edit that changes a rendered control's outline. This addresses a discovered case where a visually accepted draft erased the input's bottom border.
 
 The corrected actual chat flow displayed `Hello CEMIVO` in the input, then moved it into the message panel and cleared the input, with zero changed pixels outside the chosen regions. Its first input and Send measured 15.31 and 27.52 seconds respectively: these first-time provider round trips are still slow. The existing confirmed-interaction cache can now retain the DSH-generated panel as the message area after an actual full-image Send verification. Reusing those real verified artifacts in a component run with network calls forbidden completed a second literal input in 95.31 ms and Send in 32.56 ms. All outlines and outside pixels remained unchanged. Explicit file/task commands are excluded from the short-literal cache and still require fresh AI task interpretation. Cached timings do not apply to new pages, unconfirmed interactions, arbitrary text or business tasks.
+
+The cache intersects an AI-reported message area with the neural panel's 4px-padded interior. Reporting the whole panel including its border previously caused the next cached Send to fail geometry validation and fall back to a slow provider turn. Navigation now replaces page metadata instead of merging old chat-layout/receipt fields into the desktop. Visual input and no-op actions preserve the page's view identity.
 
 A neural label such as “已执行 1” summarizes actual completed tool receipts; it is not a claim that an external service or every user goal has been fulfilled. Failed or pending receipts use a different label. A response without tool receipts is not accepted as business-task success. Detailed answers and tool results remain in the console and journal.
 
@@ -57,4 +61,16 @@ The bridge retains visible assistant text, bounded tool facts, terminal state an
 
 Early mixed planning/execution attempts timed out or hit the model token cap. These attempts were recorded as failures and did not establish successful rendering. Separating the no-tool planner, executor and receipt placement addresses that cause; arbitrary application quality and rare-provider failure handling remain experimental.
 
-**Deployment status in the development session:** updated components were tested directly without launching another HTTP service. Automatic approval blocked both restarting the existing APP service and starting a parallel test service. The already-running old service was not bypassed or hot-patched. A fresh APP process is required to activate these source changes; browser/native-window end-to-end acceptance of that deployed version remains pending.
+## Deployed verification on 2026-11-02
+
+The APP was offline at the start of the session. The authorized service startup succeeded; the APP was subsequently updated to `2.12.3-dsh-experimental`. DSH connected with a verified zero-tool planning profile. The independent training process remained running throughout APP updates.
+
+- Real HTTP interactions on the deployed `2.12.2` service opened Chat, entered and sent the exact text, rejected a stale frame, and replayed a completed request without a second action. Repeated confirmed input/Send measured **51.47 ms / 34.50 ms**, with zero changed pixels outside the effect regions. First input/Send measured 7.82 s / 12.69 s; opening a new Chat page took 13.92 s. These are single-run observations.
+- Back to desktop and reopening Chat restored identical chat pixels and messages. Home returned the desktop without retaining the old chat layout. The first test incorrectly clicked the top of the desktop expecting Back; its failed assertion was corrected to exercise the pictured controls on the actual current page.
+- A later workspace request hit the planning token cap before any tool ran. The concise task-routing instruction was then deployed in `2.12.3`. A fresh actual HTTP workspace task completed native glob/write/read, exact independent read-back, neural result feedback, persisted receipt lookup and deduplicated replay in **9.61 s**. Outside-region changed pixels were zero. The failed request was not automatically replayed.
+- **20 Python regression tests** and the Node window-controller suite passed. These include message-area clipping, Home metadata isolation and visual view-identity preservation.
+- The minimal Edge APP window was opened. Native mouse/keyboard acceptance was attempted but stopped at `Computer Use app approval timed out`, before any app input. HTTP interaction acceptance is established; native-window input acceptance remains unverified.
+
+Evidence produced in the development workspace is under `outputs/dsh-http-20261102-v2122` and `outputs/dsh-file-http-20261102`. This evidence is separate from source control and contains only the test session's application artifacts.
+
+The main image model resumed from its saved 210,000-step checkpoint toward 1,000,000 native-256 steps. An isolated 210,500-step main-model snapshot had finite tensors but still produced category confusion and unwanted switches in sampled chat output. It was **not** promoted to the APP's stable main-model selection. These findings do not certify arbitrary application generation or real-time fresh-provider response.
