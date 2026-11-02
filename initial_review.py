@@ -51,7 +51,14 @@ When application_spec contains actual_windows_result, this is a local-computer
 screen, not a generic mockup. Check that the displayed state agrees with those
 measured facts (connected versus disconnected, active SSID, PC versus Wi-Fi).
 Do not demand switches or extra dialogs. A settings-request receipt does not
-mean a network connection or device pairing completed. Missing optional hardware
+mean a network connection or device pairing completed. A private password page
+with one empty input and a Connect control is a pending credential request, NOT
+a completed connection. All configuration stays within the generated image.
+For a settings category hub, all categories in settings_categories are essential
+entry controls, not Wi-Fi details. For Sound/Display/Bluetooth/Devices, compare
+active controls with the returned controls list: reject invented pairing,
+brightness, resolution Apply, device removal or other unavailable operations.
+Missing optional hardware
 details may be omitted; invented connection success must be rejected.
 
 Return ONLY a JSON object with exactly these FOUR fields:

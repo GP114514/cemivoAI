@@ -294,7 +294,19 @@ class AgentRuntime:
                 raise LiveError("Agent 的最终界面计划格式不正确，已执行结果会保留。", "agent_response", 502) from None
         raise LiveError("Agent 已达到本次推理轮数上限，已执行结果会保留。", "agent_limit", 502)
 
-    def event(self, data):
+    def private_wifi(self,body):
+        if (not isinstance(body,dict) or set(body)!={'session_id','version','request_id','token','password','x','y'}
+                or not isinstance(body['password'],str) or len(body['password'])>128
+                or not isinstance(body['token'],str) or not re.fullmatch(r'[a-f0-9]{48}',body['token'])):
+            raise LiveError('Wi-Fi 私密输入格式不正确。','invalid_private_input',422)
+        # The fingerprint, journal, model and ordinary event stream never see
+        # the secret. A repeated request ID replays its original native result.
+        safe={'session_id':body['session_id'],'version':body['version'],'request_id':body['request_id'],
+            'interaction_mode':'auto','credential_token':body['token'],
+            'event':{'type':'click','x':body['x'],'y':body['y'],'input_method':'pointer'}}
+        return self.event(safe,private_wifi={'token':body['token'],'password':body['password']})
+
+    def event(self, data,private_wifi=None):
         if not isinstance(data, dict):
             raise LiveError("请求需要 JSON 对象。", "invalid_request", 422)
         if data.get("interaction_mode") == "toggle_only":
@@ -348,19 +360,26 @@ class AgentRuntime:
             status = "complete"
             try:
                 self.live.stage = "understanding"
-                if adaptive:
+                if private_wifi is not None:
+                    self.live.stage='acting'
+                    plan=self.live.computer.execute_private(self,request_id,png,previous,event,progress,private_wifi)
+                elif adaptive:
                     scope_hint=(self.live.intent_memory.plan(self.live.planner,png,previous,event)
                         if getattr(self.live.planner,'reuse_ui_intents',False) else None)
                     if scope_hint is None:
                         scope_hint=self.live.planner.infer_auto(png, previous, event, history, defer_task_caption=True)
-                if scope_hint is not None:
+                if private_wifi is not None:
+                    pass
+                elif scope_hint is not None:
                     self.live._scope(scope_hint)
                 # A visual proposal cannot consume a direct typed task. Even
                 # a no-redraw request may need real document/task tools.
                 visual_only = scope_hint is not None and scope_hint.get('requires_tools') is False
                 untyped_switch = scope_hint is not None and not event.get('text') and scope_hint['target_type'] == 'toggle'
                 legacy_shortcut = scope_hint is not None and not event.get('text') and scope_hint.get('requires_tools') is not True and (scope_hint['target_type'] == 'uncertain' or not scope_hint['should_update'])
-                if scope_hint is not None and (visual_only or untyped_switch or legacy_shortcut):
+                if private_wifi is not None:
+                    pass
+                elif scope_hint is not None and (visual_only or untyped_switch or legacy_shortcut):
                     plan = scope_hint
                     progress["answer"] = scope_hint["intent"]
                 else:
@@ -411,6 +430,9 @@ class AgentRuntime:
                             from dsh_result import draw_receipt
                             png,generated=draw_receipt(self.live,png,previous,plan,progress['tools'])
                             scope={'mode':'local','target_type':'other','reason':'DSH-selected blank result region; actual tool receipt summary'}
+                        elif plan.get('private_wifi_feedback'):
+                            png,generated=self.live.computer.draw_private_result(self.live,png,previous,plan['system_result'])
+                            scope={'mode':'local','target_type':'other','reason':'Actual Windows result in the existing AI-bound password page'}
                         elif plan.get('navigation'):
                             png, generated = self.live.navigation.render(previous,png,plan,event,session.frames)
                         elif scope is not None and scope["mode"] == "local":

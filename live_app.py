@@ -1025,7 +1025,7 @@ class LiveApp:
                 'page_structure_verification':bool(getattr(self.planner,'ui_quality_check',False)),
                 'confirmed_local_text_memory':bool(getattr(self.planner,'reuse_ui_intents',False))},
             'local_computer':{'available':self.computer.host.available,'native_wifi':self.computer.host.available,
-                'saved_profiles_only':True,'new_credentials':'Windows Settings'},
+                'saved_profiles_only':False,'new_credentials':'private_in_app','external_settings':False},
             "training": {key: training.get(key) for key in ("state", "step", "total_steps")},
             "runtime": {"loaded": self.renderer.generator is not None if hasattr(self.renderer, "generator") else False,
                 "device": "cuda", "last_error": getattr(self.renderer, "last_error", None),

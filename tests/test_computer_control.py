@@ -78,11 +78,13 @@ class ComputerTests(unittest.TestCase):
         result=compact_plan_prompt(planner,plan)
         self.assertEqual(result['next_prompt'],'Neural desktop');planner.complete.assert_not_called()
 
-    def test_settings_request_does_not_claim_device_or_network_connected(self):
-        computer=ComputerControl(FakeHost())
-        result=computer.invoke({'action':'settings','page':'bluetooth'},{},{'text':'Open Bluetooth'})
-        self.assertEqual(result['status'],'settings_requested')
-        self.assertNotIn('connection',result)
+    def test_all_settings_remain_internal_and_do_not_launch_windows(self):
+        host=FakeHost();computer=ComputerControl(host)
+        for page in ('wifi','network','about','bluetooth','devices','display','sound'):
+            result=computer.invoke({'action':'settings','page':page},{},{'text':'Open settings'})
+            self.assertIn(result['status'],('internal_page','unsupported','unavailable'))
+            self.assertNotIn('connection',result)
+        self.assertEqual(host.opens,[])
 
     def test_unchanged_native_state_gets_a_new_real_operation_label(self):
         computer=ComputerControl(FakeHost())

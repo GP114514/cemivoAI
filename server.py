@@ -26,7 +26,7 @@ import console_events
 
 ROOT = Path(__file__).resolve().parent
 CHECKPOINTS = ROOT / "neural" / "checkpoints"
-VERSION = "2.13.0-local-computer"
+VERSION = "2.14.0-system-settings"
 
 
 @contextmanager
@@ -244,7 +244,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         route = urlsplit(self.path).path
         if route not in ("/api/generate", "/api/training/start", "/api/training/pause",
-                         "/api/live/config", "/api/live/model", "/api/live/session", "/api/live/desktop", "/api/live/event", "/api/agent/event"):
+                         "/api/live/config", "/api/live/model", "/api/live/session", "/api/live/desktop", "/api/live/event", "/api/agent/event",'/api/computer/wifi-credentials'):
             return self.json(404, {"error": "未知接口。"})
         origin = self.headers.get("Origin")
         if origin and origin not in (f"http://127.0.0.1:{self.server.server_port}", f"http://localhost:{self.server.server_port}"):
@@ -275,6 +275,9 @@ class Handler(BaseHTTPRequestHandler):
                 result = self.server.studio.live.event(body)
             elif route == "/api/agent/event":
                 result = self.server.studio.agent.event(body)
+            elif route == '/api/computer/wifi-credentials':
+                console_events.emit('PRIVATE INPUT',request=body.get('request_id'),input_type='Wi-Fi password',content='[NOT LOGGED]')
+                result=self.server.studio.agent.private_wifi(body)
             else:
                 result = self.server.studio.generate(body)
             if route in ('/api/agent/event','/api/live/event','/api/live/session','/api/live/desktop'):

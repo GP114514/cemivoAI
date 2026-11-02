@@ -5,6 +5,17 @@
   let entered=false,configuring=false;
   const setup=$("setup"),setupForm=$("setupForm"),setupKey=$("setupKey"),setupEnter=$("setupEnter"),setupError=$("setupError"),setupHint=$("setupHint");
   const setupBackend=$("setupBackend"),setupKeyLabel=$("setupKeyLabel");
+  const wifiPassword=$('wifiPassword');let privateStamp='';
+  function privateReady(value=frame){const request=value?.credential_request;return request?.kind==='wifi_password'&&/^[a-f0-9]{48}$/.test(request.token)&&[request.input_bounds,request.submit_bounds].every(box=>Array.isArray(box)&&box.length===4&&box.every(Number.isInteger)&&box[0]>=0&&box[1]>=0&&box[0]<box[2]&&box[1]<box[3]&&box[2]<=value.width&&box[3]<=value.height);}
+  function positionPrivate(){
+    if(!privateReady()){wifiPassword.hidden=true;wifiPassword.value='';privateStamp='';return;}
+    const rect=image.getBoundingClientRect(),scale=Math.min(rect.width/frame.width,rect.height/frame.height),box=frame.credential_request.input_bounds;
+    wifiPassword.style.left=(rect.left+(rect.width-frame.width*scale)/2+box[0]*scale)+'px';
+    wifiPassword.style.top=(rect.top+(rect.height-frame.height*scale)/2+box[1]*scale)+'px';
+    wifiPassword.style.width=((box[2]-box[0])*scale)+'px';wifiPassword.style.height=((box[3]-box[1])*scale)+'px';
+    wifiPassword.style.fontSize=Math.max(12,14*scale)+'px';wifiPassword.hidden=false;wifiPassword.disabled=busy;
+    const stamp=frame.credential_request.token+':'+frame.version;if(stamp!==privateStamp){wifiPassword.value='';privateStamp=stamp;form.hidden=true;anchor=null;wifiPassword.focus();}
+  }
   function setupLabels(){
     const dsh=setupBackend.value==='dsh';setupKey.hidden=dsh;setupKeyLabel.hidden=dsh;
     put(setupEnter,dsh?'连接 DSH 并进入':'连接 API 并进入');
@@ -25,8 +36,8 @@
   }
   function seconds(){return operation?Math.max(0,Math.floor((Date.now()-operation.started)/1000)):0;}
   function updateActivity(){activity.hidden=!busy;progress.hidden=!busy;if(!busy||!operation)return;put(stage,operation.label);put(elapsed,seconds()+" 秒");}
-  function beginOperation(label,kind){busy=true;operation={started:Date.now(),label,kind};document.body.dataset.busy="true";send.disabled=true;notice.hidden=true;clearTimeout(noticeTimer);updateActivity();}
-  function endOperation(){busy=false;operation=null;document.body.dataset.busy="false";send.disabled=false;updateActivity();}
+  function beginOperation(label,kind){busy=true;operation={started:Date.now(),label,kind};document.body.dataset.busy="true";send.disabled=true;wifiPassword.disabled=true;notice.hidden=true;clearTimeout(noticeTimer);updateActivity();}
+  function endOperation(){busy=false;operation=null;document.body.dataset.busy="false";send.disabled=false;wifiPassword.disabled=false;updateActivity();}
   function resultMessage(value,persistent=false){message(value+" · "+seconds()+" 秒",persistent);}
   function clickFeedback(event){clearTimeout(pulseTimer);pulse.style.left=event.clientX+"px";pulse.style.top=event.clientY+"px";pulse.style.animation="none";pulse.hidden=false;void pulse.offsetWidth;pulse.style.animation="";pulseTimer=setTimeout(()=>{pulse.hidden=true;},600);}
   async function api(path,data){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),data?240000:8000);try{const response=await fetch(path,{method:data?"POST":"GET",cache:"no-store",headers:{"Content-Type":"application/json"},body:data?JSON.stringify(data):undefined,signal:controller.signal});const result=await response.json();if(!response.ok){const error=new Error(result.error||"请求未完成");error.code=result.code;error.status=response.status;throw error;}return result;}finally{clearTimeout(timer);}}
@@ -46,6 +57,7 @@
     if(shouldDecode)image.src=source.href;
     if(anchor&&(anchor.session_id!==next.session_id||anchor.version!==next.version||anchor.sha256!==next.sha256||anchor.image_url!==next.image_url)){form.hidden=true;anchor=null;}
     frame=next;image.hidden=false;empty.hidden=true;document.body.dataset.preview=String(next.edit?.preview===true);
+    positionPrivate();
     if(next.edit?.preview)message(next.agent?.warning||"待确认预览：内容未通过核验，原输入文字已保留。",true);
     else if(firstFrame&&!busy&&!uncertain)message("左键操作，右键输入文字");
     return true;
@@ -94,8 +106,25 @@
       else{remember(requestKey,null);if(error.code==="planner_not_configured")plannerConfigured=false;resultMessage(error.message||"操作未完成，文字已保留。",true);}updateHelp();return false;
     }finally{endOperation();void sync();}
   }
-  image.addEventListener("click",event=>{if(!form.hidden){form.hidden=true;anchor=null;message("已关闭输入框，文字保留；请再点击要操作的位置。");return;}const position=point(event);if(position)void act({type:"click",...position,input_method:"pointer"},frame,event);});
-  image.addEventListener("contextmenu",event=>{event.preventDefault();if(busy){message("上一操作处理中，请等待。");return;}const position=point(event);if(!position)return;anchor={...frame,...position};form.hidden=false;const rect=form.getBoundingClientRect();form.style.left=Math.max(8,Math.min(event.clientX,innerWidth-Math.min(320,innerWidth-16)-8))+"px";form.style.top=Math.max(8,Math.min(event.clientY,innerHeight-rect.height-8))+"px";text.focus();});
+  async function submitPrivate(position=null){
+    if(busy||uncertain||!privateReady())return;
+    if(!wifiPassword.value){message('请在画面内的密码框输入 Wi-Fi 密码。');wifiPassword.focus();return;}
+    const source=frame,request=frame.credential_request,box=request.submit_bounds,id=crypto.randomUUID(),stamp=++epoch;
+    const password=wifiPassword.value;wifiPassword.value='';beginOperation('正在本机连接 Wi-Fi','private');remember(requestKey,id);
+    try{const result=await api('/api/computer/wifi-credentials',{session_id:source.session_id,version:source.version,request_id:id,
+        token:request.token,password,x:position?.x??Math.floor((box[0]+box[2])/2),y:position?.y??Math.floor((box[1]+box[3])/2)});
+      remember(requestKey,null);await display(result,stamp);resultMessage(result.agent?.warning||result.agent?.answer||'本机连接结果已返回',result.agent?.status!=='complete');
+    }catch(error){if(['stale_frame','credential_expired','invalid_private_input','busy','dsh_busy','planner_not_configured'].includes(error.code))remember(requestKey,null);
+      else{uncertain=id;message('连接结果暂未确认，正在查询；密码不会自动重复提交。',true);}
+      resultMessage(error.message||'连接未完成，请在当前画面重试。',true);
+    }finally{endOperation();void sync();}
+  }
+  wifiPassword.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing&&!event.repeat){event.preventDefault();void submitPrivate();}if(event.key==='Escape')wifiPassword.value='';});
+  window.addEventListener('resize',positionPrivate);
+  image.addEventListener("click",event=>{if(!form.hidden){form.hidden=true;anchor=null;message("已关闭输入框，文字保留；请再点击要操作的位置。");return;}const position=point(event);if(!position)return;
+    if(privateReady()){const box=frame.credential_request.submit_bounds;if(box[0]<=position.x&&position.x<box[2]&&box[1]<=position.y&&position.y<box[3]){void submitPrivate(position);return;}}
+    void act({type:"click",...position,input_method:"pointer"},frame,event);});
+  image.addEventListener("contextmenu",event=>{event.preventDefault();if(busy){message("上一操作处理中，请等待。");return;}if(privateReady()){wifiPassword.focus();message('密码只在画面内输入，不经过 AI 对话。');return;}const position=point(event);if(!position)return;anchor={...frame,...position};form.hidden=false;const rect=form.getBoundingClientRect();form.style.left=Math.max(8,Math.min(event.clientX,innerWidth-Math.min(320,innerWidth-16)-8))+"px";form.style.top=Math.max(8,Math.min(event.clientY,innerHeight-rect.height-8))+"px";text.focus();});
   form.addEventListener("submit",async event=>{event.preventDefault();if(composing||busy||!anchor)return;const value=text.value;if(!value.trim()){text.focus();return;}if(value.length>500||new TextEncoder().encode(value).length>1500){message("文字过长，已保留原文。");return;}const target=anchor;await act({type:"click",x:target.x,y:target.y,text:value,input_method:"contextmenu"},target);});
   text.addEventListener("input",()=>{remember(draftKey,text.value);});text.addEventListener("compositionstart",()=>{composing=true;});text.addEventListener("compositionend",()=>{composing=false;remember(draftKey,text.value);});text.addEventListener("keydown",event=>{if(event.key==="Escape"){form.hidden=true;anchor=null;}if(event.key==="Enter"&&!event.shiftKey&&!event.isComposing&&!composing&&event.keyCode!==229){event.preventDefault();if(!event.repeat)form.requestSubmit();}});
   window.addEventListener("keydown",event=>{if(event.key==="Escape"){form.hidden=true;anchor=null;}});window.addEventListener("online",()=>{void sync();});window.addEventListener("focus",()=>{void sync();});
@@ -119,6 +148,6 @@
     }catch(error){put(setupError,error.message||"连接未完成，请重试。");}
     finally{configuring=false;setupEnter.disabled=false;setupLabels();}
   });
-  window.addEventListener("beforeunload",()=>{setupKey.value="";});
+  window.addEventListener("beforeunload",()=>{setupKey.value="";wifiPassword.value='';});
   void connection();setInterval(sync,1000);
 })();

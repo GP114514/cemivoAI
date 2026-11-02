@@ -1,6 +1,6 @@
 # Local Windows computer integration
 
-`2.13.0-local-computer` connects the generated APP to the computer on which its
+`2.14.0-system-settings` connects the generated APP to the computer on which its
 Python service runs. DSH interprets the full image and the user's click/text;
 the host executes a narrow Windows operation and returns actual system facts.
 The neural border/text models then generate a page from those facts. This is
@@ -14,9 +14,10 @@ Connect DSH in the small window, then right-click and enter, for example:
 - `显示本机真实 Wi-Fi 连接状态和已保存网络，给我刷新和连接按钮。`
 - `选择 Network 2，不要连接。`
 - `连接 Wi-Fi <the exact saved network name>。`
-- `打开 Windows Wi-Fi 设置。` or `打开 Windows 蓝牙设置。`
+- `打开设置。` opens the six-category in-app hub.
+- `打开声音设置。` / `打开显示设置。` / `打开蓝牙设置。`
 
-A generated network-name control selects a saved profile first. **Connect**
+A generated network-name control selects a saved or visible network first. **Connect**
 acts on that selected identity; selection itself does not change the connection.
 **Refresh** reads the state currently reported by Windows. A visible `Result N`
 is the actual operation sequence, so an unchanged state still has feedback.
@@ -41,13 +42,15 @@ name and measured identity remain in the host facts and console.
   not success. An unconfirmed result is reported as unconfirmed, never silently
   retried. If Windows already reports that target connected, no reconnect is
   submitted.
-- `settings`: request a fixed `ms-settings:` page for Wi-Fi, network, Bluetooth,
-  devices, about, display or sound. Launch acceptance is not proof of pairing
-  or connecting. Password entry and first-time network configuration belong in
-  Windows Settings; the APP exposes no password argument.
+- `wifi_network_select` / `wifi_network_connect`: select an observed visible
+  network and connect it, requesting a private in-app password when required.
+- `settings`: open the internal category hub or a specific category, with no
+  external Windows Settings launch.
+- `audio_volume` / `audio_mute`: apply and read back default-output sound state.
+- `bluetooth_scan`: enumerate/inquire for classic Bluetooth devices.
 
 The host bridge does not expose arbitrary shell commands, programs, registry
-writes, profile installation/deletion, remote control, shutdown, credential
+writes, persistent profile installation/deletion, remote control, shutdown, credential
 extraction or permission repair. Existing DSH workspace tasks remain separate.
 Windows access restrictions are respected and returned as errors. In particular,
 WLAN details may be unavailable when the desktop process lacks the required
@@ -56,7 +59,7 @@ Wi-Fi/location permission. No permission is changed automatically.
 Only a server-validated `system_action` can execute one of these operations.
 Actual local-computer requests cannot fall through to an imagined settings app.
 A proposed action mixed with visual-only flags is corrected before execution;
-the final plan is checked again. Connect requires a currently saved profile and
+the final plan is checked again. Connect requires a measured saved/visible network and
 either the exact explicitly named target or the selected identity on this
 session's measured system page. Explicit “do not connect / only select” wording
 is enforced locally even if the model proposes Connect. Request journaling
@@ -78,7 +81,7 @@ unfit content still fail. The final full PNG, including neural navigation, is
 reviewed against the actual Windows receipt before publication. A failed redraw
 does not undo or repeat a completed system operation; its receipt remains saved.
 
-## Measured development acceptance
+## Initial 2.13 development acceptance
 
 The deployed Windows build read the actual CPU, memory/disk information, Wi-Fi
 interface, current saved-network connection and saved/visible network names. The final
@@ -102,12 +105,69 @@ regression tests and the Node window-controller suite passed. Earlier rejected
 layout/routing/refresh attempts remain in the workspace evidence rather than
 being presented as successful tests.
 
-A transition to a different real network, first-time password entry, native
-Settings-window appearance and Bluetooth pairing were **not live-tested**. The
+A transition to a different real network using a real password and Bluetooth
+pairing were **not live-tested**. The
 connection-admission/timeout, access-denial, unknown-target, no-connect wording,
 selection-only and replay cases have deterministic tests. This does not certify
 general control of every Windows application.
 
 Implementation references: [WlanConnect](https://learn.microsoft.com/en-us/windows/win32/api/wlanapi/nf-wlanapi-wlanconnect),
 [WLAN connection state](https://learn.microsoft.com/en-us/windows/win32/api/wlanapi/ns-wlanapi-wlan_connection_attributes),
-and [Windows Settings URIs](https://learn.microsoft.com/en-us/windows/apps/develop/launch/launch-settings).
+and [Core Audio endpoint volume](https://learn.microsoft.com/en-us/windows/win32/api/endpointvolume/nn-endpointvolume-iaudioendpointvolume).
+
+## All settings stay inside cemivo
+
+The former native Windows Settings launch path has been removed. **Settings**
+now means the generated category hub: **Wi-Fi, Sound, Display, Bluetooth, Devices,
+About**. The page validator requires all six entry buttons together. Each
+category has its own page identity and returns to the same generated hub.
+
+- **Wi-Fi:** saved and visible network selection, connection and refresh. An
+  unsaved WPA/WPA2 personal or WPA3-SAE/AES network can request a password in an
+  AI-chosen empty input on the generated image. A masked local input layer
+  receives keystrokes in that rectangle. Its dedicated loopback submission
+  bypasses AI planning, ordinary event text and draft/session storage. The APP
+  supplies an in-memory **temporary** WLAN profile; it does not save a credential
+  file or automatically persist the new profile. Enterprise/EAP and unsupported
+  security modes remain unavailable inside the APP.
+- **Sound:** actual default-output volume/mute, with native Core Audio setters
+  and read-back. There is no invented output-device switching function.
+- **Display:** actual current resolution, refresh rate and color depth. This
+  release displays those facts and refreshes them; changing resolution or
+  brightness is not implemented.
+- **Bluetooth:** actual classic-radio/remembered/connected device enumeration
+  and inquiry. An absent or unready radio is reported honestly. Pairing and
+  radio power control are not implemented; no Windows pairing window is opened.
+- **Devices:** present-device inventory/class counts from Windows SetupAPI.
+  Installing/removing drivers and devices is not implemented.
+- **About:** local computer/CPU/memory/disk/Windows information.
+
+The password field and its submit button are bound to indices and rectangles
+chosen by the AI layout. A short-lived, session-bound token prevents a stale
+page from submitting credentials. Passwords are excluded from model prompts,
+screenshots, the durable request journal, console fields and browser storage.
+They necessarily exist transiently in local process/request memory while passed
+to Windows. The APP does not claim to erase all OS/runtime memory copies.
+Replay returns the recorded native result instead of submitting the key again.
+
+Connection feedback uses the local neural text head in the existing AI-chosen
+input/receipt regions. It does not require an online model after the native
+connection attempt. A failed/unconfirmed result can renew the private input
+inside the same page for retry. A controlled failure fixture using the actual
+text weights verified zero outside-region pixel changes and no model/network
+connection calls during that feedback. A real invalid-password join was not run.
+
+Latest deployed verification passed the internal Wi-Fi-settings page, selection
+of a real visible unsaved network, the generated private password page, in-app
+cancel/Home, stale-private-submission rejection and unchanged existing connection.
+No real Wi-Fi password was submitted in this live test. The private submission,
+temporary-profile admission, replay, journal/model/console exclusion and offline
+feedback ownership have deterministic tests.
+
+The six-category acceptance clicked every actual generated entry. It exercised
+the Sound volume-down button and restored the original volume, read Display and
+Devices, reported the current unready Bluetooth radio, visited About/Wi-Fi, and
+returned to the identical hub. New pages took roughly 6–8 seconds and cached
+Back took roughly 2 seconds in that run. Native-window mouse/keyboard acceptance
+is still not established by these HTTP/controller tests. Sixty-one Python tests
+and the Node controller suite passed. No external Settings launch API remains.

@@ -1,6 +1,6 @@
 # DSH graphical interaction backend
 
-The `2.13.0-local-computer` source includes a DeepSeek Harness backend. cemivoAI is the image-based interaction surface; DSH interprets the full frame, executes workspace tasks, and supplies authoritative tool receipts. A separate, allowlisted Windows host bridge can now read the local computer/Wi-Fi and connect a saved Wi-Fi profile, with real system receipts. See [Local computer integration](LOCAL-COMPUTER.md) for scope and measured limits. The local cemivoAI models still produce the image pixels. This integration does not replace the DSH desktop application or copy its credential store.
+The `2.14.0-system-settings` source includes a DeepSeek Harness backend. cemivoAI is the image-based interaction surface; DSH interprets the full frame, executes workspace tasks, and supplies authoritative tool receipts. A separate, allowlisted Windows host bridge supplies an internal six-category settings hub, native sound controls, device/display facts and Wi-Fi connection with private in-app password entry. It never launches Windows Settings. See [Local computer integration](LOCAL-COMPUTER.md) for scope and measured limits. The local cemivoAI models still produce the image pixels. This integration does not replace the DSH desktop application or copy its credential store.
 
 ## Setup
 

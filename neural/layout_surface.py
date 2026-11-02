@@ -171,11 +171,28 @@ def draw_page(live,prompt,seed,steps,goal,system_result=None):
     def draw(caption,draw_seed,requested_steps):
         context={'goal':goal,'drawing_caption':caption}
         instruction=SYSTEM
+        credential=(system_result or {}).get('credential_request')
         if system_result:
-            context['actual_windows_result']=system_result
-            instruction+='\nThis is a REAL local PC page. Draw only facts supported by actual_windows_result. Keep important short values EXACT, including active SSID and RAM. Use ASCII short labels where needed (Wi-Fi, PC, Refresh, Settings, Connect). Show Connected only if Windows state is connected. Available saved profiles may use their provided display_name; a displayed alias refers to that exact measured profile. Never draw an unsaved network as connected or invent hardware. New passwords and Bluetooth pairing use Windows Settings. Include useful picture buttons for Refresh/Wi-Fi/PC/Settings. No sample chat or settings switches. Keep it minimal; 4-8 elements, short text. Do not print internal IDs. Windows returns requests separately from completed changes; settings_requested is not connection success.'
+            public_result=deepcopy(system_result)
+            if credential:public_result['credential_request']={k:v for k,v in credential.items() if k!='token'}
+            context['actual_windows_result']=public_result
+            instruction+='\nThis is a REAL local PC page. Draw only facts supported by actual_windows_result. Keep important short values EXACT, including active SSID and RAM. Use ASCII short labels where needed (Wi-Fi, PC, Refresh, Settings, Connect). Show Connected only if Windows state is connected. Profiles and visible networks may use their provided display_name; each alias refers to that exact measured identity. Never invent hardware or a connection. ALL settings and password entry remain INSIDE cemivo; never suggest Windows Settings or an external app. Unsupported controls show an honest in-app unavailable state. No sample chat. Keep it minimal; 4-8 elements, short text. Do not print internal IDs.'
             instruction+=' Include the exact receipt_label from actual_windows_result as its own text element (for example Result 3). It is the actual operation sequence, not a success claim; it must visibly distinguish a refresh even when connection facts are unchanged.'
-            instruction+=' On a Wi-Fi page include a short exact text line Selected: DISPLAY_NAME for wifi.selected_profile_id; include a Connect button and a Refresh button. Network-name buttons select a saved profile first; Connect acts on that selection. Current connection and selected network are separate facts. Show at most 2-3 network choices on this compact page. Other profiles remain available by typed exact names. If no selection is available, show Settings instead of a fake Connect.'
+            instruction+=' On a Wi-Fi page show Selected: DISPLAY_NAME for selected_network_id or selected_profile_id, a Connect button and a Refresh button. Network-name buttons only select; Connect acts on that selection. Current connection and selected network are separate facts. Show at most 2-3 saved or visible choices. Never display a fake Windows launch control.'
+            if system_result['page']=='settings':
+                instruction+='\nSETTINGS HOME: this is the CATEGORY HUB, not a Wi-Fi detail page. Draw exactly one button for EACH settings_categories entry using its exact short label: Wi-Fi, Sound, Display, Bluetooth, Devices, About. Keep all six categories visible together, plus a Settings title and the receipt label. No network list or Connect button here. You choose their geometry.'
+            elif system_result['page']=='sound':
+                instruction+='\nSOUND PAGE: show the measured sound.volume percentage and sound.muted state. Use supported buttons Vol +, Vol -, Mute (or Unmute), Refresh. Do not invent an output-device switching API.'
+            elif system_result['page']=='display':
+                instruction+='\nDISPLAY PAGE: show measured width x height, refresh_hz and color_bits, with Refresh. This version is read-only; do not invent brightness sliders, Apply, resolution change or other unsupported controls.'
+            elif system_result['page']=='bluetooth':
+                instruction+='\nBLUETOOTH PAGE: use actual radio/device facts. If available is false, say Not ready or Unavailable; do not draw a fake On switch. Scan is supported for classic Bluetooth. Pairing and radio power control are NOT implemented; omit Pair/On buttons. No Windows popup.'
+            elif system_result['page']=='devices':
+                instruction+='\nDEVICES PAGE: show actual device class counts and a few short device labels, with Refresh. Inventory is read-only; no invented connect, install or remove actions.'
+            if not system_result.get('ok'):
+                instruction+=' This operation did not succeed. Include a separate short text element Unavailable (or Not confirmed for unconfirmed connection). Preserve the real current connection; never label the requested operation successful.'
+        if credential:
+            instruction+='\nThis page requests a PRIVATE Wi-Fi password. Return JSON with screen_type,elements AND private_input:{input:INDEX,submit:INDEX}, zero-based indices into elements. Choose exactly one empty input and a Connect button; the chosen indices must refer to them. Include Password and Session only short text, the target display name and actual receipt label. A separate local password-input layer will fill your empty input; no secret is available to you. Do not invent masked text, type a password or add a dialog outside this image.'
         messages=[{'role':'system','content':instruction},{'role':'user','content':json.dumps(context,ensure_ascii=False)}]
         start=time.perf_counter()
         for attempt in range(2):
@@ -184,6 +201,7 @@ def draw_page(live,prompt,seed,steps,goal,system_result=None):
             proposed=None
             try:
                 proposed=json.loads(raw)
+                bindings=proposed.pop('private_input',None) if isinstance(proposed,dict) and credential else None
                 constrained=False
                 try:layout=validate_layout(proposed,editor.text_model.lookup)
                 except ValueError:
@@ -191,6 +209,17 @@ def draw_page(live,prompt,seed,steps,goal,system_result=None):
                     layout=fit_layout(proposed,editor.text_model.lookup);constrained=True
                 if system_result and not any(e['kind']=='text' and e['text']==system_result['receipt_label'] for e in layout['elements']):
                     raise ValueError('Include one separate text element with exact actual receipt label: '+system_result['receipt_label'])
+                if system_result and system_result['page']=='settings':
+                    needed={item['label'] for item in system_result['system_state']['settings_categories']}
+                    if not needed<={e['text'] for e in layout['elements'] if e['kind']=='button'}:
+                        raise ValueError('Settings home must include every category button: '+', '.join(sorted(needed)))
+                if credential:
+                    if (not isinstance(bindings,dict) or set(bindings)!={'input','submit'} or
+                            any(type(v) is not int or not 0<=v<len(layout['elements']) for v in bindings.values())):
+                        raise ValueError('private_input needs exact valid input and submit indices')
+                    field=layout['elements'][bindings['input']];button=layout['elements'][bindings['submit']]
+                    if field['kind']!='input' or field['text']!='' or button['kind']!='button':
+                        raise ValueError('private_input must select the empty input and pictured Connect button')
                 break
             except (ValueError,TypeError,KeyError) as error:
                 if attempt:
@@ -208,7 +237,12 @@ def draw_page(live,prompt,seed,steps,goal,system_result=None):
             frame['state']={'view':'local_computer','messages':[]}
             frame['application']={'id':secrets.token_hex(12),'name':'Local PC',
                 'goal':'Operate this local computer with actual Windows receipts; never simulated network/device success.',
-                'spec':{'original_goal':goal,'actual_windows_result':deepcopy(system_result)}}
+                'spec':{'original_goal':goal,'actual_windows_result':public_result}}
+            if credential:
+                x0,y0,x1,y1=layout['elements'][bindings['input']]['bounds']
+                frame['credential_request']=dict(credential,input_bounds=[x0+4,y0+4,x1-4,y1-4],
+                    submit_bounds=layout['elements'][bindings['submit']]['bounds'].copy(),
+                    status_bounds=next(e['bounds'].copy() for e in layout['elements'] if e['kind']=='text' and e['text']==system_result['receipt_label']))
         frame['timings']['layout_planner_ms']=round(planned,2)
         # Review the complete image that the user will actually receive,
         # including its already generated navigation controls.

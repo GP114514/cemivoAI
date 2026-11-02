@@ -3,8 +3,10 @@ const source=fs.readFileSync(path.join(__dirname,'../web/screen.js'),'utf8');
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 const frame={session_id:'b'.repeat(32),version:1,width:256,height:256,sha256:'c'.repeat(64),image_url:'/api/live/images/'+ 'a'.repeat(32)+'.png'};
 
-function harness({fail=false,verified=true,protocol=1}={}){
+function harness({fail=false,verified=true,protocol=1,privatePage=false}={}){
  const nodes={},calls=[],stored=new Map(),intervals=[];
+ const scene=privatePage?{...frame,credential_request:{kind:'wifi_password',token:'d'.repeat(48),
+  input_bounds:[12,112,240,134],submit_bounds:[12,150,112,180]}}:frame;
  let configured=false,backend='deepseek',finished=false;
  function el(id){return nodes[id]||={id,hidden:!['setup','setupForm','setupEnter','setupBackend'].includes(id),value:id==='setupBackend'?'dsh':'',textContent:'',disabled:false,style:{},events:{},addEventListener(k,f){this.events[k]=f;},focus(){},getBoundingClientRect(){return {width:256,height:256,left:0,top:0};}};}
  const ok=value=>({ok:true,json:async()=>value});
@@ -22,7 +24,8 @@ function harness({fail=false,verified=true,protocol=1}={}){
     if(fail)return {ok:false,status:503,json:async()=>({code:'dsh_unavailable',error:'DSH unavailable'})};
     configured=true;backend=body.backend;return ok({configured,backend,verified});
    }
-   if(url==='/api/live/current')return ok(frame);
+   if(url==='/api/live/current')return ok(scene);
+   if(url==='/api/computer/wifi-credentials')return ok({...frame,version:2,agent:{status:'complete',answer:'Actual local result'}});
    if(url==='/api/agent/event')return ok({...frame,agent:{status:'awaiting_result',dsh_pending:true,warning:'Waiting for the actual DSH result.'}});
    if(url.startsWith('/api/agent/request?'))return ok({status:finished?'render_failed':'awaiting_result',warning:finished?'DSH finished; actual receipts updated.':undefined});
    throw Error('Unexpected fixture endpoint '+url);
@@ -67,4 +70,19 @@ async function pendingInteraction(){
  assert(h.el('notice').textContent.includes('actual receipts updated'));
 }
 
-(async()=>{await setupCases();await pendingInteraction();console.log('PASS: verified DSH setup, old-server gate, API key handling, pending-result polling and no duplicate click.');})().catch(error=>{console.error(error);process.exitCode=1;});
+async function privateInputStaysInTheGeneratedScreen(){
+ const h=harness({privatePage:true});await tick();await h.el('setupForm').events.submit({preventDefault(){}});await tick();
+ assert.equal(h.el('wifiPassword').hidden,false);
+ assert.equal(h.el('wifiPassword').style.left,'12px');
+ h.el('wifiPassword').value='LOCAL_ONLY_TEST_8391';
+ h.el('wifiPassword').events.keydown({key:'Enter',preventDefault(){},isComposing:false,repeat:false});
+ await tick();await tick();
+ const submitted=h.calls.filter(c=>c.url==='/api/computer/wifi-credentials');assert.equal(submitted.length,1);
+ assert.equal(submitted[0].body.password,'LOCAL_ONLY_TEST_8391');
+ assert(!h.calls.some(c=>c.url==='/api/agent/event'));
+ assert.equal(h.el('wifiPassword').value,'');
+ assert(![...h.stored.values()].some(v=>String(v).includes('LOCAL_ONLY_TEST_8391')));
+ assert.equal(h.el('text').value,'');
+}
+
+(async()=>{await setupCases();await pendingInteraction();await privateInputStaysInTheGeneratedScreen();console.log('PASS: DSH setup, pending deduplication and in-image private password submission without model/storage leakage.');})().catch(error=>{console.error(error);process.exitCode=1;});
