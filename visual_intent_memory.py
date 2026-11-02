@@ -124,6 +124,7 @@ class Memory:
             if not record or event.get('type') != 'click':
                 return None
             state, composer = record['source']['state'], record['composer']
+            window = None
             if any(_overlap(composer, old) for old in state.get('sent_message_bounds', [])):
                 return None
             def clicked(box):
@@ -144,16 +145,19 @@ class Memory:
                 if not self._literal(text, record['text_model']) or not self._box(draft, previous) or not _contains(composer, draft):
                     return None
                 box = [last[0], last[3]+2, area[2], last[3]+2+self._rows(text, area[2]-last[0])*18]
-                if (not _contains(area, box) or _overlap(box, composer)
-                        or any(_overlap(box, old) for old in state['sent_message_bounds'])):
-                    return None
+                if not _contains(area, box):
+                    from neural.message_window import compile_window
+                    window = compile_window(png, state, area, text)
+                    box = window['items'][-1]['bounds'].copy()
+                if (_overlap(box, composer) or (window is None
+                        and any(_overlap(box, old) for old in state['sent_message_bounds']))):return None
                 with Image.open(BytesIO(png)) as image:
                     if image.format != 'PNG' or image.mode != 'L' or image.size != (previous['width'], previous['height']):
                         return None
                     pixels = np.asarray(image)
-                    if not bool(np.all(pixels[box[1]:box[3], box[0]:box[2]] >= 248)):
+                    if window is None and not bool(np.all(pixels[box[1]:box[3], box[0]:box[2]] >= 248)):
                         return None
-                regions = [box.copy(), draft.copy()]
+                regions = [(window['clear_bounds'] if window else box).copy(), draft.copy()]
             else:
                 return None
             value = {'intent': 'Display literal draft' if action == 'input' else 'Display the existing draft as a message',
@@ -171,6 +175,8 @@ class Memory:
             except Exception:
                 # A production geometry/policy rejection must use fresh AI.
                 return None
+            if window is not None:
+                result['_message_window'] = window
             result['visual_intent_memory'] = deepcopy(POLICY)
             result.update(provider='Local confirmed AI policy',model='neural_text_head',
                 intent='输入文字' if action=='input' else '发送当前草稿',
@@ -178,6 +184,8 @@ class Memory:
                 recognition={'status':'recognized','source':'confirmed_full_frame_hash','attempts':0,
                     'full_image_used':False,'full_image_hash_checked':True,'focus_used':False,
                     'message':'复用本页已确认的操作，已核对完整画面与当前状态。'})
+            if window is not None:
+                result['expected_change']='已发送，消息区已滚动，其他区域保持不变。'
             result[PROOF] = self._signature(result, previous['sha256'], previous, event)
             return result
         except (ValueError, TypeError, KeyError, OSError, UnicodeError, IndexError):

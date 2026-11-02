@@ -946,6 +946,8 @@ class LiveApp:
         self.planner = planner or DeepSeekPlanner(best_effort=True, responsive_ui=True,ui_quality_check=True,reuse_ui_intents=True)
         from visual_intent_memory import Memory
         self.intent_memory=Memory()
+        from training_control import TrainingControl
+        self.training_control=TrainingControl(self.root)
         from neural.text_editor import TextEditor
         self.text_editor = TextEditor(self.root / 'neural' / 'text-head-v1')
         from surface_navigation import NavigationRuntime
@@ -962,7 +964,7 @@ class LiveApp:
     def status(self):
         snapshot = read_json(self.directory / "snapshot.json")
         available = (self.directory / "inference.pt").is_file() and bool(snapshot.get("sha256"))
-        training = read_json(self.root / "neural" / "checkpoints" / "status.json")
+        training = self.training_control.training()
         card = read_json(self.root / "neural" / "checkpoints" / "model_card.json")
         saved_step = card.get("checkpoint_step")
         current_step = snapshot.get("step")
@@ -1152,7 +1154,49 @@ class LiveApp:
             timings=dict(timings, verify_ms=round((time.perf_counter()-verify_start)*1000, 2)))
         return png, frame
 
+    def _draw_message_window(self, original_png, previous, plan, event):
+        """Redraw a signed, bounded visible message tail using neural glyphs."""
+        from behavior_regions import validate_effect_regions,compose_effect_regions,contains
+        from neural.layout_surface import text_interior,verify_borders
+        if (plan.get('text_action')!='send' or plan.get('requires_tools') is not False
+                or not self.intent_memory.authorize(plan,original_png,previous,event)):
+            raise LiveError('消息滚动缺少当前画面的已确认策略，原图和草稿已保留。','message_window_unverified',422)
+        edit=validate_effect_regions(plan['local_edit'],previous,event)
+        window=plan['_message_window'];clear=window['clear_bounds'];items=window['items']
+        draft=previous.get('state',{}).get('input_bounds')
+        if (not items or items[-1]['text']!=plan['input_text'] or items[-1]['bounds']!=plan['text_bounds']
+                or not draft or plan.get('clear_input_bounds')!=draft):
+            raise LiveError('消息与当前草稿不一致，原图已保留。','message_window_invalid',422)
+        for box in [clear,draft]+[item['bounds'] for item in items]:
+            if not any(contains(region,box) for region in edit['regions']):
+                raise LiveError('消息滚动超出已确认范围，原图已保留。','message_window_invalid',422)
+        # A cached policy can only scroll a genuinely empty panel interior;
+        # it cannot erase an input outline or another control.
+        if previous.get('generator')=='dsh_layout_neural_surface':
+            text_interior(previous,'send',clear)
+            text_interior(previous,'input',draft)
+        candidate=original_png;timings={'sample_ms':0,'load_ms':0,'encode_ms':0};used_model=None
+        for box,text in [(clear,' ')]+[(item['bounds'],item['text']) for item in items]+[(draft,' ')]:
+            candidate,attempt=self.text_editor.render(candidate,box,text)
+            used_model=attempt['editor_model']
+            for key in timings:timings[key]+=attempt.get(key,0)
+        png,evidence=compose_effect_regions(original_png,candidate,edit)
+        verify_borders(original_png,png,previous)
+        frame=deepcopy(previous)
+        for key in ('agent','scope','edit'):frame.pop(key,None)
+        frame.update(image_url=f'/api/live/images/{secrets.token_hex(16)}.png',
+            sha256=hashlib.sha256(png).hexdigest(),
+            edit=dict(evidence,vision_verified=False,local_memory_verified=True,
+                verification_source='AI-origin-policy+full_image_hash+neural_text',semantics_guaranteed=False,
+                preview=False,generator='native_neural_text_head',text_applied=True,
+                clear_input_bounds=draft.copy(),text_bounds=items[-1]['bounds'].copy(),
+                message_window=deepcopy(window),editor_model=used_model),
+            timings=dict(timings,verify_ms=0))
+        return png,frame
+
     def _draw_region(self, original_png, previous, plan, event):
+        if plan.get('_message_window') is not None:
+            return self._draw_message_window(original_png,previous,plan,event)
         from stable_edit import validate_region_plan, compose_region, StableEditError
         from behavior_regions import validate_effect_regions, compose_effect_regions, contains
         try:

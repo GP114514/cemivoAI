@@ -150,7 +150,7 @@ def visual_state(previous, plan, rendered=None):
     from copy import deepcopy
     state = deepcopy(previous)
     if plan.get('should_update') and plan.get('update_mode')=='global' and not plan.get('navigation'):
-        for key in ('composer_bounds','input_bounds','sent_message_bounds'):
+        for key in ('composer_bounds','input_bounds','sent_message_bounds','visible_sent_messages'):
             state.pop(key,None)
     if plan.get('text_action') == 'input':
         state['input_text'] = plan['input_text']
@@ -162,7 +162,13 @@ def visual_state(previous, plan, rendered=None):
             state['input_text'] = ''
             state['last_submitted_text'] = plan['input_text']
             state['sent_messages'] = (state.get('sent_messages',[])+[plan['input_text']])[-12:]
-            if rendered.get('text_bounds'):
+            window=rendered.get('message_window')
+            if window:
+                state['visible_sent_messages']=[item['text'] for item in window['items']]
+                state['sent_message_bounds']=[item['bounds'].copy() for item in window['items']]
+            elif rendered.get('text_bounds'):
+                visible=state.get('visible_sent_messages',previous.get('sent_messages',[]))
+                state['visible_sent_messages']=visible+[plan['input_text']]
                 state['sent_message_bounds']=(state.get('sent_message_bounds',[])+[rendered['text_bounds']])[-24:]
             state.pop('input_bounds',None)
     return state

@@ -310,7 +310,8 @@ class NavigationRuntime:
                 else:
                     output, frame = self.live._draw_page(plan['next_prompt'], previous.get('seed',42), previous.get('steps',8),
                         f'打开{name}应用。{plan.get("intent",name)}。页面要求：{plan["next_prompt"]}')
-                    output, frame = self.add_chrome(output, frame)
+                    if not frame.get('surface_chrome'):
+                        output, frame = self.add_chrome(output, frame)
                     target_key = 'page-' + secrets.token_hex(8)
                     frame['surface_navigation'] = {'page_id':target_key,'page_kind':'app','app_name':name}
                     frame['application'] = {'id':secrets.token_hex(12),'name':name,

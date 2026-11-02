@@ -19,6 +19,8 @@ Return ONLY JSON {"screen_type":"short category","elements":[
 You choose the controls and geometry from the complete goal. No fixed templates,
 click hotspots, code, HTML or SVG. This request plans a screen and executes no work.
 Canvas is 256x256. Rows 0..31 are reserved for existing neural Home/Back navigation.
+Home/Back are already drawn there; do not duplicate desktop or back controls in
+the application body. Use the remaining space for the requested application.
 Every element must be wholly within x=6..250, y=36..250. All coordinates must be
 integers, right/bottom exclusive. Use 2..10 elements with at least 3px gaps.
 Elements MUST NOT overlap or contain one another, including panels. A panel is a
@@ -159,6 +161,9 @@ def draw_page(live,prompt,seed,steps,goal):
         png,frame=render_layout(editor,layout)
         frame.update(prompt=caption,seed=draw_seed,steps=requested_steps)
         frame['timings']['layout_planner_ms']=round(planned,2)
+        # Review the complete image that the user will actually receive,
+        # including its already generated navigation controls.
+        png,frame=live.navigation.add_chrome(png,frame)
         return png,frame
     png,frame=draw(prompt,seed,steps)
     return check_page(live.planner,png,frame,prompt,goal,draw)
