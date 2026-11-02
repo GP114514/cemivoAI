@@ -286,6 +286,10 @@ class DeepSeekPlanner:
                 return {'provider':'DSH','backend':'dsh','configured':self.dsh_backend.bridge.initialized,
                     'base_url':'local DSH SDK','model':'deepseek-flash','credential_storage':'managed_by_dsh',
                     'verified':self.dsh_backend.verified,'workspace':str(self.dsh_backend.workspace),
+                    'session_policy':'two_reused_channels','planning_effort':'off',
+                    'planning_requests':self.dsh_backend.planner_bridge.prompt_count,
+                    'execution_requests':self.dsh_backend.bridge.prompt_count,
+                    'session_count':len(self.dsh_backend.planner_bridge.known_sessions)+len(self.dsh_backend.bridge.known_sessions),
                     'awaiting_result':bool(self.dsh_backend.bridge.unsettled_session or self.dsh_backend.planner_bridge.unsettled_session)}
             return {"provider": "DeepSeek", "configured": bool(self.api_key),
                     "base_url": self.base_url, "model": self.model,

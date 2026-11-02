@@ -26,7 +26,7 @@ import console_events
 
 ROOT = Path(__file__).resolve().parent
 CHECKPOINTS = ROOT / "neural" / "checkpoints"
-VERSION = "2.12.4-dsh-experimental"
+VERSION = "2.12.5-dsh-experimental"
 
 
 @contextmanager
@@ -280,7 +280,8 @@ class Handler(BaseHTTPRequestHandler):
                 console_events.emit('OUTPUT',request=body.get('request_id'),status=agent.get('status','complete'),
                     intent=plan.get('intent'),scope=plan.get('update_mode'),answer=agent.get('answer'),
                     drawing_prompt=result.get('prompt'),warning=agent.get('warning'),timings=result.get('timings'),
-                    tools=[{'name':t.get('name'), 'ok':t.get('ok')} for t in agent.get('tools',[])])
+                    provider=plan.get('provider'),outside_changed_pixels=result.get('edit',{}).get('outside_changed_pixels'),
+                    tools=[{'name':t.get('name'), 'status':t.get('status')} for t in agent.get('tools',[])])
             return self.json(200, result)
         except LiveError as error:
             console_events.emit('ERROR',route=route,code=error.code,message=str(error))

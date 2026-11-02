@@ -32,6 +32,10 @@ class DshBridge:
         self.stderr=[];self.initialized=False;self.active_session=None
         self.start_lock=threading.RLock();self.prompt_lock=threading.Lock()
         self.on_event=None;self.unsettled_session=None
+        role='planner' if planning else 'tasks'
+        self.session_id='cemivo-'+role+'-'+uuid.uuid4().hex
+        self.known_sessions=set();self.open_sessions=set()
+        self.prompt_count=0
 
     def start(self, provider='deepseek-official', model='deepseek-flash'):
         with self.start_lock:return self._start(provider,model)
@@ -53,6 +57,7 @@ class DshBridge:
             self.process=subprocess.Popen(args,cwd=self.root,env=env,stdin=subprocess.PIPE,stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,text=True,encoding='utf-8',errors='replace',bufsize=1,
                 creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+            self.open_sessions.clear()
             process=self.process
             def read():
                 for line in process.stdout:
@@ -71,7 +76,8 @@ class DshBridge:
                     self.stderr.append(redact(line.strip()));self.stderr=self.stderr[-20:]
             threading.Thread(target=read,daemon=True).start();threading.Thread(target=errors,daemon=True).start()
         try:
-            result=self.call('initialize',{'cwd':str(self.root),'provider':provider,'model':model,'maxTokens':8192,'reasoningEffort':'low'},60)
+            result=self.call('initialize',{'cwd':str(self.root),'provider':provider,'model':model,'maxTokens':8192,
+                'reasoningEffort':'off' if self.planning else 'low'},60)
             if result.get('serverInfo',{}).get('name')!='deepseek-harness-sdk-runtime':raise DshError('Unexpected DSH SDK server')
             self.initialized=True
         except Exception:
@@ -131,16 +137,27 @@ class DshBridge:
     def prompt(self, blocks, session_id=None, timeout=120, on_event=None, on_settled=None):
         with self.prompt_lock:
             if self.unsettled_session:raise DshPending(self.unsettled_session)
-            self.start();session_id=session_id or 'cemivo-graphics-'+uuid.uuid4().hex
-            # Unique sessions isolate each accepted interaction; repeated UI
-            # requests are deduplicated by the application's durable journal.
+            self.start();session_id=session_id or self.session_id
+            if session_id in self.known_sessions and session_id not in self.open_sessions:
+                # Restore only this bridge's own session after a process restart.
+                # A failed resume never creates a replacement or resends a task.
+                self.call('session/resume',{'sessionId':session_id},60)
+                self.open_sessions.add(session_id)
+            # The previous session/wait completed before prompt_lock was released.
+            # Its notifications precede that reply on stdio. Retain ONLY the new
+            # interval so an old answer/terminal/tool receipt cannot prove this turn.
+            with self.lock:
+                self.events=[m for m in self.events if m.get('params',{}).get('sessionId')!=session_id]
             self.active_session=session_id
             self.on_event=on_event
             admitted=None
             try:
+                self.known_sessions.add(session_id)
+                self.open_sessions.add(session_id)
+                self.prompt_count+=1
                 admitted=self.call('session/prompt',{'sessionId':session_id,'contentBlocks':blocks},30)
                 try:self.call('session/wait',{'sessionId':session_id},timeout)
-                except DshTimeout:
+                except DshError:
                     self.unsettled_session=session_id
                     self._watch_pending(session_id,admitted.get('messageId'),on_settled)
                     raise DshPending(session_id) from None

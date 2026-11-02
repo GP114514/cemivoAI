@@ -1,6 +1,6 @@
 # DSH graphical interaction backend
 
-The `2.12.4-dsh-experimental` source adds a DeepSeek Harness backend. cemivoAI is the image-based interaction surface; DSH interprets the full frame, executes workspace tasks, and supplies authoritative tool receipts. The local cemivoAI models still produce the image pixels. This integration does not replace the DSH desktop application or copy its credential store.
+The `2.12.5-dsh-experimental` source adds a DeepSeek Harness backend. cemivoAI is the image-based interaction surface; DSH interprets the full frame, executes workspace tasks, and supplies authoritative tool receipts. The local cemivoAI models still produce the image pixels. This integration does not replace the DSH desktop application or copy its credential store.
 
 ## Setup
 
@@ -86,3 +86,19 @@ The final deployed HTTP run on `2.12.4` passed all eight literal inputs and Send
 **25 Python regression tests** passed, including final-image review ordering, overflow/history alignment, refusal to erase unknown pixels, unsigned-scroll rejection and dead-process telemetry. The existing Node controller suite also passed. Evidence is in the development workspace's `outputs/dsh-chat-pressure-20261102-before`, `-after` and `-final`; the first two retain failed attempts rather than hiding them.
 
 At the start of this later session, both old processes had exited. Training resumed from the saved **222,000** checkpoint toward **1,000,000** steps; the training PID stayed alive during both APP updates. Direct 16/32-step samples from an isolated **222,500** checkpoint had finite tensors. The Chinese empty-chat sample improved, but English Chat still produced an unwanted switch and Tasks/Notes still showed category or state errors. That checkpoint was **not promoted**. The structured DSH/neural auxiliary path and the main PixelFlow model remain distinct.
+
+## Faster planning and fewer DSH conversations
+
+`2.12.5` uses the installed adapter's supported `reasoningEffort: off` for the no-tool visual planner. The execution channel retains `low`. Full-image inspection, page review, local pixel boundaries and business receipt checks still run. Each APP run reuses one planning session and one execution session, created only when needed, instead of opening a new DSH conversation for every model call. A healthy repeated connection does not send another readiness turn. Previous conversations are retained; this update does not delete DSH history. The SDK's retained session context remains subject to its normal compaction behavior.
+
+Bridge requests remain serialized through `session/wait`. That SDK quiescence reply follows the preceding turn's notifications. The bridge clears the settled interval before admitting the next prompt, so an old answer, terminal or tool receipt cannot complete a new operation. A failed quiescence check or uncertain admission blocks reuse. A process restart resumes only the bridge's own known session; resume failure does not create another session or resend the task. New planning and execution instructions explicitly identify the current request. Request replay still uses the APP's durable journal.
+
+In a deployed HTTP eight-message run, opening Chat changed from **18.99 s to 7.08 s**, first input from **8.91 s to 4.10 s**, and first Send from **12.92 s to 6.36 s**, compared with the immediately preceding `2.12.4` run. Back/reopen measured **2.58/1.82 s**. Confirmed subsequent input/Send measured **32.82–53.61 ms**, including bounded scrolling; all sixteen text edits had zero independently measured outside-region pixel changes. The layout can differ between model runs, and these are individual development measurements rather than latency guarantees. First-time network operations still take seconds.
+
+The entire chat/navigation sequence used one DSH planning conversation. Two subsequent real tasks created and independently read back different uniquely named test files using the **same execution session**, completing in **9.92/8.35 s**. Each task produced its own glob/write/read receipts; replay did not run another task. The final APP counters reported **16 planning requests, 2 execution requests and 2 sessions**. Thirty deterministic Python tests and the Node controller suite passed, including current-turn isolation, missing-new-terminal rejection, known-session resume, failed-resume refusal, and uncertain-quiescence blocking. Evidence is under `outputs/dsh-speed-20261102` and `outputs/dsh-speed-tasks-20261102` in the development workspace.
+
+## Visible input/output console
+
+The minimal-window launcher opens `命令提示符.cmd` alongside the image window. It can also be launched separately to show clicks and literal input, DSH planning requests and JSON responses, actual tool arguments/results, local-cache selection, outside-region pixel checks and timings. The viewer polls a bounded process-memory log; it does not execute commands or replay requests. One OS file lock keeps a single viewer per installation. Closing it does not stop the APP or training.
+
+Image base64, raw provider request headers, credential-store data and hidden reasoning are excluded. Known API-token/Bearer patterns are redacted, and each displayed field is bounded. These diagnostics contain interaction text and actual task outputs; they are not public release artifacts. The minimal image UI gains no additional model conversation dialogs.
