@@ -155,6 +155,7 @@ class DeepSeekPlanner:
         self.ui_quality_check=bool(ui_quality_check)
         self.check_hint_ink=bool(ui_quality_check)
         self.reuse_ui_intents=bool(reuse_ui_intents)
+        self.computer=None
 
     def _interaction_instruction(self):
         from interaction_policy import BEST_EFFORT_INSTRUCTION, COMPACT_RESPONSE
@@ -164,6 +165,9 @@ class DeepSeekPlanner:
     def _auto_instruction(self):
         from interaction_policy import COMPACT_AUTO
         result=(COMPACT_AUTO if self.responsive_ui else SYSTEM_AUTO)+self._interaction_instruction()
+        if self.computer is not None:
+            from computer_control import INSTRUCTION
+            result+='\n'+INSTRUCTION
         if self.dsh_backend is not None:
             result+='\nBackend is DSH, with real workspace file/shell tools under its own permissions. Set requires_tools:true for actual tasks beyond visual UI changes, including file creation/reading and project work. Planning never executes these tasks.'
             result+='\nFor an explicit workspace task, ONLY route it to the executor: requires_tools:true, should_update:false, update_mode:none, target_type:other, next_prompt:"", brief intent/expected_change/state_summary/scope_reason. Omit geometry, navigation and text_action. Do not solve the task, discuss tool availability or design its result screen here. The separate executor gets the full original input, screenshot and task state, then plans actual feedback after real tools finish.'
@@ -505,6 +509,14 @@ class DeepSeekPlanner:
             "state_summary": frame.get("plan", {}).get("state_summary", ""), "ui_state": frame.get("state", {}),
             "recent_interactions": history[-6:],"page_navigation":frame.get('surface_navigation',{})}
         context["visual_evidence"] = evidence
+        if self.computer is not None:
+            from computer_control import CAPABILITIES
+            context['computer_capabilities']=CAPABILITIES
+            host=self.computer.context(frame,event)
+            if host is not None:context['local_computer']=host
+            if frame.get('system_state'):
+                context['application']={k:v for k,v in context['application'].items() if k!='spec'}
+                context['system_page']=frame.get('system_page')
         if frame.get('generator')=='dsh_layout_neural_surface':
             context['rendered_elements']=frame.get('neural_layout',{}).get('elements',[])
         self._vision_stage("understanding")
@@ -518,6 +530,15 @@ class DeepSeekPlanner:
             if error.code == "invalid_toggle_plan":
                 raise LiveError("AI 未返回完整的自动范围计划，原图已保留。", "invalid_auto_plan", 502) from error
             raise
+        if self.computer is not None and self.computer.needs_routing(value,frame,event):
+            self._vision_stage('refining')
+            value=self._toggle_vision(self._auto_instruction()+'\nThis request concerns the REAL local computer, not an imagined app. '
+                'Return the appropriate system_action with requires_tools:true,should_update:false,update_mode:none, '
+                'target_type:other,next_prompt:"". Omit navigation/local_edit. Do not invent an operation receipt, '
+                'Result number or system values. The host reads and renders those after the real action.',
+                dict(context,invalid_visual_route=value),[png]+focus_images)
+            if self.computer.needs_routing(value,frame,event):
+                raise LiveError('AI 未选择真实本机操作，未执行模拟连接；请重试具体系统操作。','system_route_required',502)
         from prompt_budget import compact_plan_prompt
         task_caption_deferred = bool(defer_task_caption and value.get('requires_tools') is True)
         if task_caption_deferred:
@@ -545,6 +566,10 @@ class DeepSeekPlanner:
                 raise LiveError('AI 坐标校正改变了原输入或发送操作，原图与草稿已保留。','invalid_auto_plan',502)
             plan=self.validate_auto_plan(self._ground_toggle(corrected,evidence,frame,event),frame,event,self.public()['model'])
             plan['geometry_revision_attempts']=1
+        # A schema correction may have changed a visual proposal into a real
+        # system/tool route. Its no-redraw preflight must not be revised into a
+        # simulated screen by the later visible-response pass.
+        task_caption_deferred=bool(defer_task_caption and plan.get('requires_tools') is True)
         attempts, review_error = 1, None
         if plan["target_type"] == "uncertain" and (evidence.get("focus", {}).get("has_visible_detail") or event.get("text")):
             # This is one read-only visual reconsideration, before ANY tools.
@@ -567,6 +592,8 @@ class DeepSeekPlanner:
             plan = self.finalize_send_plan(plan,png,frame,event)
         if task_caption_deferred:
             plan['caption_deferred_until_tool_results'] = True
+        if self.computer is not None and self.computer.needs_routing(plan,frame,event):
+            raise LiveError('本机请求未形成有效的真实操作计划，原图已保留。','system_route_required',502)
         plan["recognition"] = self._recognition(plan, evidence, attempts, review_error)
         return plan
 
@@ -667,6 +694,12 @@ class DeepSeekPlanner:
                     plan.update(best_effort=True, assumption=assumption.strip())
             from interaction_policy import response_fields
             plan.update(response_fields(value))
+            if value.get('system_action') is not None:
+                from computer_control import validate_action
+                if (plan.get('requires_tools') is not True or mode!='none' or target!='other'
+                        or value.get('navigation') or value.get('text_action') or edit is not None):
+                    raise ValueError('system operations need a separate real-tool routing plan')
+                plan['system_action']=validate_action(value['system_action'])
             if 'empty_hint_checked' in value:
                 if type(value['empty_hint_checked']) is not bool:
                     raise ValueError('empty hint checked must be boolean')
@@ -950,6 +983,9 @@ class LiveApp:
         self.planner = planner or DeepSeekPlanner(best_effort=True, responsive_ui=True,ui_quality_check=True,reuse_ui_intents=True)
         from visual_intent_memory import Memory
         self.intent_memory=Memory()
+        from computer_control import ComputerControl
+        self.computer=ComputerControl()
+        if isinstance(self.planner,DeepSeekPlanner):self.planner.computer=self.computer
         from training_control import TrainingControl
         self.training_control=TrainingControl(self.root)
         from neural.text_editor import TextEditor
@@ -988,6 +1024,8 @@ class LiveApp:
                 'neural_desktop':bool(self.navigation.status().get('available')), 'image_navigation':True,
                 'page_structure_verification':bool(getattr(self.planner,'ui_quality_check',False)),
                 'confirmed_local_text_memory':bool(getattr(self.planner,'reuse_ui_intents',False))},
+            'local_computer':{'available':self.computer.host.available,'native_wifi':self.computer.host.available,
+                'saved_profiles_only':True,'new_credentials':'Windows Settings'},
             "training": {key: training.get(key) for key in ("state", "step", "total_steps")},
             "runtime": {"loaded": self.renderer.generator is not None if hasattr(self.renderer, "generator") else False,
                 "device": "cuda", "last_error": getattr(self.renderer, "last_error", None),
@@ -1104,10 +1142,12 @@ class LiveApp:
             "timings": dict(timings, planner_ms=0), "experimental": True,"generator":"pixel_flow",
             'screen_check':dict(screen_check,repair_attempts=int(rejected is not None),rejected=rejected)}
 
-    def _draw_page(self,prompt,seed,steps,goal):
+    def _draw_page(self,prompt,seed,steps,goal,system_result=None):
         if getattr(self.planner,'dsh_backend',None) is not None:
             from neural.layout_surface import draw_page
-            return draw_page(self,prompt,seed,steps,goal)
+            return draw_page(self,prompt,seed,steps,goal,system_result=system_result)
+        if system_result:
+            raise LiveError('本机操作结果已保存；请连接 DSH 以生成可核验的系统画面。','system_drawing_unavailable',503)
         from page_quality import check_page
         png,generated=self._draw(prompt,seed,steps)
         return check_page(self.planner,png,generated,prompt,goal,self._draw)

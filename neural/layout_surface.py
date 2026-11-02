@@ -67,13 +67,39 @@ def validate_layout(value,vocabulary):
         padding=0 if kind=='text' else 4
         if (kind!='text' and (x1-x0<16 or y1-y0<26)) or y1-y0-2*padding<18:
             raise ValueError('element is too small for native glyphs')
-        if text:text_layout(text,x1-x0-2*padding,y1-y0-2*padding,vocabulary)
+        if text:
+            try:text_layout(text,x1-x0-2*padding,y1-y0-2*padding,vocabulary)
+            except ValueError as error:
+                needed=max(sum(character_advance(c) for c in line) for line in text.split('\n'))
+                raise ValueError(f'element {len(result)} {kind} {text[:24]!r}: inner {x1-x0-2*padding}x{y1-y0-2*padding}; '
+                    f'single-line text needs {needed}px width and 18px height. Enlarge only within the existing canvas/gap rules, '
+                    f'or shorten its label. Detail: {error}') from error
         for old in result:
             a=old['bounds']
             if x0<a[2]+3 and a[0]<x1+3 and y0<a[3]+3 and a[1]<y1+3:
                 raise ValueError('elements overlap or leave less than 3px gap')
         result.append(deepcopy(item))
     return {'screen_type':category.strip(),'elements':result}
+
+
+def layout_diagnostics(value,vocabulary,error):
+    """Report every text-fit failure in one correction, not one per round trip."""
+    issues=[str(error)]
+    if isinstance(value,dict) and isinstance(value.get('elements'),list):
+        for index,item in enumerate(value['elements'][:10]):
+            try:
+                if not isinstance(item,dict):continue
+                x0,y0,x1,y1=item['bounds'];text=item['text'];padding=0 if item['kind']=='text' else 4
+                if not text:continue
+                text_layout(text,x1-x0-2*padding,y1-y0-2*padding,vocabulary)
+            except (ValueError,TypeError,KeyError) as problem:
+                if not isinstance(item,dict):continue
+                text=item.get('text','')
+                if isinstance(text,str):
+                    width=max((sum(character_advance(c) for c in line) for line in text.split('\n')),default=0)
+                    issues.append(f'element {index} {text[:24]!r}: {problem}; single-line inner width >= {width}px; '
+                        f'bordered outer width >= {width+8}px. Fix ALL listed elements together.')
+    return '\n'.join(issues)[:1800]
 
 
 def text_interior(frame,action,bounds):
@@ -136,30 +162,53 @@ def render_layout(editor,layout):
                 'sample_ms':round((time.perf_counter()-loaded)*1000,2),'total_ms':round((time.perf_counter()-started)*1000,2)}}
 
 
-def draw_page(live,prompt,seed,steps,goal):
+def draw_page(live,prompt,seed,steps,goal,system_result=None):
     from live_app import LiveError
     from page_quality import check_page
     editor=live.navigation._editor()
     if editor.status().get('available') is not True:
         raise LiveError('神经边框与文字模型不可用，原画面已保留。','surface_unavailable',503)
     def draw(caption,draw_seed,requested_steps):
-        messages=[{'role':'system','content':SYSTEM},{'role':'user','content':json.dumps({
-            'goal':goal,'drawing_caption':caption},ensure_ascii=False)}]
+        context={'goal':goal,'drawing_caption':caption}
+        instruction=SYSTEM
+        if system_result:
+            context['actual_windows_result']=system_result
+            instruction+='\nThis is a REAL local PC page. Draw only facts supported by actual_windows_result. Keep important short values EXACT, including active SSID and RAM. Use ASCII short labels where needed (Wi-Fi, PC, Refresh, Settings, Connect). Show Connected only if Windows state is connected. Available saved profiles may use their provided display_name; a displayed alias refers to that exact measured profile. Never draw an unsaved network as connected or invent hardware. New passwords and Bluetooth pairing use Windows Settings. Include useful picture buttons for Refresh/Wi-Fi/PC/Settings. No sample chat or settings switches. Keep it minimal; 4-8 elements, short text. Do not print internal IDs. Windows returns requests separately from completed changes; settings_requested is not connection success.'
+            instruction+=' Include the exact receipt_label from actual_windows_result as its own text element (for example Result 3). It is the actual operation sequence, not a success claim; it must visibly distinguish a refresh even when connection facts are unchanged.'
+            instruction+=' On a Wi-Fi page include a short exact text line Selected: DISPLAY_NAME for wifi.selected_profile_id; include a Connect button and a Refresh button. Network-name buttons select a saved profile first; Connect acts on that selection. Current connection and selected network are separate facts. Show at most 2-3 network choices on this compact page. Other profiles remain available by typed exact names. If no selection is available, show Settings instead of a fake Connect.'
+        messages=[{'role':'system','content':instruction},{'role':'user','content':json.dumps(context,ensure_ascii=False)}]
         start=time.perf_counter()
         for attempt in range(2):
             response=live.planner.complete({'messages':messages,'response_format':{'type':'json_object'}},60)
             raw=response['choices'][0]['message']['content']
+            proposed=None
             try:
-                layout=validate_layout(json.loads(raw),editor.text_model.lookup)
+                proposed=json.loads(raw)
+                constrained=False
+                try:layout=validate_layout(proposed,editor.text_model.lookup)
+                except ValueError:
+                    from .layout_constraints import fit_layout
+                    layout=fit_layout(proposed,editor.text_model.lookup);constrained=True
+                if system_result and not any(e['kind']=='text' and e['text']==system_result['receipt_label'] for e in layout['elements']):
+                    raise ValueError('Include one separate text element with exact actual receipt label: '+system_result['receipt_label'])
                 break
             except (ValueError,TypeError,KeyError) as error:
                 if attempt:
                     raise LiveError('DSH 页面布局未通过边界、间距或文字检查，原图已保留。','layout_invalid',422) from error
                 messages.extend([{'role':'assistant','content':raw},{'role':'user','content':
-                    'Correct the JSON layout while keeping the original goal. Validation error: '+str(error)[:180]}])
+                    'Correct ALL layout errors together while keeping the original goal. '+
+                    layout_diagnostics(proposed,editor.text_model.lookup,error)}])
         planned=(time.perf_counter()-start)*1000
         png,frame=render_layout(editor,layout)
+        frame['neural_layout']['geometry_constraints_applied']=constrained
         frame.update(prompt=caption,seed=draw_seed,steps=requested_steps)
+        if system_result:
+            frame['system_state']=deepcopy(system_result['system_state'])
+            frame['system_page']=system_result['page']
+            frame['state']={'view':'local_computer','messages':[]}
+            frame['application']={'id':secrets.token_hex(12),'name':'Local PC',
+                'goal':'Operate this local computer with actual Windows receipts; never simulated network/device success.',
+                'spec':{'original_goal':goal,'actual_windows_result':deepcopy(system_result)}}
         frame['timings']['layout_planner_ms']=round(planned,2)
         # Review the complete image that the user will actually receive,
         # including its already generated navigation controls.

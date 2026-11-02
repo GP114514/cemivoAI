@@ -7,7 +7,8 @@ import unittest
 from unittest.mock import patch
 import hashlib
 import json
-from neural.layout_surface import validate_layout,text_interior,verify_borders,draw_page
+from neural.layout_surface import validate_layout,text_interior,verify_borders,draw_page,layout_diagnostics
+from neural.layout_constraints import fit_layout
 
 
 class NeuralLayoutTests(unittest.TestCase):
@@ -21,6 +22,32 @@ class NeuralLayoutTests(unittest.TestCase):
 
     def test_ai_layout_is_retained_without_invented_controls(self):
         self.assertEqual(validate_layout(self.layout,self.vocabulary),self.layout)
+
+    def test_correction_reports_all_overflowing_labels_together(self):
+        vocabulary=set('SettingsConnect')
+        proposed={'elements':[{'kind':'button','bounds':[8,180,68,212],'text':'Settings'},
+            {'kind':'button','bounds':[80,180,128,212],'text':'Connect'}]}
+        diagnostic=layout_diagnostics(proposed,vocabulary,ValueError('text does not fit'))
+        self.assertIn('Settings',diagnostic);self.assertIn('Connect',diagnostic)
+        self.assertIn('outer width >= 80px',diagnostic)
+
+    def test_geometry_fitter_retains_all_ai_controls_and_exact_text(self):
+        original={'screen_type':'wifi','elements':[
+            {'kind':'text','bounds':[8,38,248,56],'text':'Selected: LNNU'},
+            {'kind':'button','bounds':[8,190,72,216],'text':'Connect'},
+            {'kind':'button','bounds':[84,190,164,216],'text':'Refresh'},
+            {'kind':'button','bounds':[176,190,248,216],'text':'Settings'}]}
+        saved=deepcopy(original);vocabulary=set('Selected: LNNUConnectRefreshSettings')
+        fixed=fit_layout(original,vocabulary)
+        self.assertEqual(original,saved)
+        self.assertEqual([(e['kind'],e['text']) for e in fixed['elements']],[(e['kind'],e['text']) for e in original['elements']])
+        self.assertEqual(validate_layout(fixed,vocabulary),fixed)
+        self.assertGreaterEqual(fixed['elements'][1]['bounds'][2]-fixed['elements'][1]['bounds'][0],71)
+        self.assertGreaterEqual(fixed['elements'][3]['bounds'][2]-fixed['elements'][3]['bounds'][0],80)
+
+    def test_geometry_fitter_cannot_replace_unknown_glyphs_or_add_controls(self):
+        value=deepcopy(self.layout);value['elements'][0]['text']='未训练'
+        with self.assertRaises(ValueError):fit_layout(value,self.vocabulary)
 
     def test_invalid_geometry_cannot_cover_chrome_or_other_controls(self):
         for bounds in ([8,30,248,54],[8,36,260,54],[8,36,False,54],[8,36,248,63]):
@@ -71,7 +98,7 @@ class NeuralLayoutTests(unittest.TestCase):
             self.assertEqual(frame['sha256'],hashlib.sha256(image).hexdigest())
             self.assertIn('surface_chrome',frame)
             return image,frame
-        with patch('neural.layout_surface.render_layout',return_value=(body,{'timings':{}})),patch('page_quality.check_page',side_effect=review):
+        with patch('neural.layout_surface.render_layout',return_value=(body,{'timings':{},'neural_layout':deepcopy(self.layout)})),patch('page_quality.check_page',side_effect=review):
             delivered,frame=draw_page(live,'Chat',42,8,'Chat with Back and Send')
         self.assertEqual(delivered,final)
 

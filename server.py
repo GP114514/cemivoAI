@@ -26,7 +26,7 @@ import console_events
 
 ROOT = Path(__file__).resolve().parent
 CHECKPOINTS = ROOT / "neural" / "checkpoints"
-VERSION = "2.12.5-dsh-experimental"
+VERSION = "2.13.0-local-computer"
 
 
 @contextmanager
@@ -179,6 +179,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.json(200, self.server.studio.training_control.snapshot())
         if path == "/api/live/status":
             return self.json(200, self.server.studio.live.status())
+        if path == '/api/computer':
+            return self.json(200,self.server.studio.live.computer.snapshot())
         if path == "/api/agent/workspace":
             return self.json(200, self.server.studio.agent.workspace())
         if path == "/api/agent/request":

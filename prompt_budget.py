@@ -81,6 +81,14 @@ def compact_plan_prompt(planner, value, timeout=20, budget=120):
     """
     if not isinstance(value, dict) or value.get("should_update") is not True:
         return value
+    navigation=value.get('navigation')
+    if (isinstance(navigation,dict) and navigation.get('action') in ('home','back')
+            and value.get('requires_tools') is False and value.get('update_mode')=='global'
+            and value.get('target_type')=='other'):
+        # These restore existing neural pages; no model samples the caption.
+        # Carrying a verbose previous system-state summary into a compressor
+        # only adds a provider turn and can block an otherwise valid navigation.
+        return dict(value,next_prompt='Neural desktop' if navigation['action']=='home' else 'Previous neural page')
     try:
         if type(budget) is not int or budget < 1:
             raise _failed()

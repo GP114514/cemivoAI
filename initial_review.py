@@ -47,6 +47,12 @@ This review does NOT evaluate exact spelling, glyph readability, actual click
 functionality, real business completion or tool execution. Malformed words do not
 automatically fail the review if the main shapes/category are identifiable. Do not
 claim text readable, OCR correct, tasks saved, or functionality verified.
+When application_spec contains actual_windows_result, this is a local-computer
+screen, not a generic mockup. Check that the displayed state agrees with those
+measured facts (connected versus disconnected, active SSID, PC versus Wi-Fi).
+Do not demand switches or extra dialogs. A settings-request receipt does not
+mean a network connection or device pairing completed. Missing optional hardware
+details may be omitted; invented connection success must be rejected.
 
 Return ONLY a JSON object with exactly these FOUR fields:
 {"matches_screen":true,"main_controls_present":true,

@@ -156,7 +156,7 @@ class AgentRuntime:
         # process exit. Query its receipt; never execute it during recovery.
         receipts = deepcopy(record.get("tools", []))
         for receipt in receipts:
-            if receipt.get("status") == "pending" and receipt.get('backend')!='dsh':
+            if receipt.get("status") == "pending" and receipt.get('backend') not in ('dsh','windows'):
                 saved = self.tools.operation(receipt["operation_id"])
                 if saved is not None:
                     receipt.update(result=saved, status="complete" if saved.get("ok") else "failed")
@@ -192,6 +192,8 @@ class AgentRuntime:
             return self.live.image(image_id) is not None
 
     def _loop(self, request_id, png, previous, event, history, progress, scope_hint=None):
+        if scope_hint and scope_hint.get('system_action'):
+            return self.live.computer.execute(self,request_id,png,previous,event,history,progress,scope_hint)
         if getattr(self.live.planner,'dsh_backend',None) is not None:
             return self.live.planner.dsh_backend.execute(self,request_id,png,previous,event,history,progress,scope_hint)
         from vision_grounding import VISION_EVIDENCE, prepare_click_view
@@ -417,17 +419,26 @@ class AgentRuntime:
                             else:
                                 png, generated = self.live._draw_region(png, previous, plan, event)
                         else:
-                            png, generated = self.live._draw_page(plan["next_prompt"], previous["seed"], previous["steps"],
-                                f'本次操作：{plan["intent"]}。目标画面：{plan["next_prompt"]}。变化：{plan["expected_change"]}')
+                            goal=f'本次操作：{plan["intent"]}。目标画面：{plan["next_prompt"]}。变化：{plan["expected_change"]}'
+                            if plan.get('system_result'):
+                                png,generated=self.live._draw_page(plan['next_prompt'],previous['seed'],previous['steps'],goal,
+                                    system_result=plan['system_result'])
+                                old_navigation=previous.get('surface_navigation',{})
+                                same_page=previous.get('system_page')==plan['system_result']['page']
+                                generated['surface_navigation']={'page_id':old_navigation['page_id'] if same_page and old_navigation.get('page_kind')=='app' else
+                                    'computer-'+hashlib.sha256(request_id.encode()).hexdigest()[:16],
+                                    'page_kind':'app','app_name':'Local PC','source':'actual_windows_result'}
+                            else:png,generated=self.live._draw_page(plan['next_prompt'],previous['seed'],previous['steps'],goal)
                             if previous.get('surface_navigation') or previous.get('surface_model'):
-                                png,generated=self.live.navigation.add_chrome(png,generated)
-                                if previous.get('surface_navigation'):
+                                if not generated.get('surface_chrome'):
+                                    png,generated=self.live.navigation.add_chrome(png,generated)
+                                if previous.get('surface_navigation') and not plan.get('system_result'):
                                     generated['surface_navigation']=deepcopy(previous['surface_navigation'])
                             if generated['sha256']==previous['sha256']:
                                 raise LiveError('模型没有生成可见变化，原图和草稿已保留。','no_visual_change',422)
                         # A restored/new page owns its metadata. Merging into
                         # the old page leaks its layout/receipt into Home/Back.
-                        if plan.get('navigation'):frame=deepcopy(generated)
+                        if plan.get('navigation') or plan.get('system_result'):frame=deepcopy(generated)
                         frame.update(generated, plan=plan)
                         if frame.get('edit', {}).get('preview'):
                             status = 'preview'
@@ -477,10 +488,11 @@ class AgentRuntime:
             # their following redraw fails; those business changes are durable.
             commit_frame = status!='awaiting_result' and not (status in ("render_failed",'partial_failure') and not progress["tools"])
             navigation_complete=bool(plan and plan.get('navigation') and status=='complete')
-            base_state=deepcopy(frame.get('state',{})) if navigation_complete else deepcopy(previous.get('state',{}))
+            system_complete=bool(plan and plan.get('system_result') and frame.get('system_state') and status!='render_failed')
+            base_state=deepcopy(frame.get('state',{})) if navigation_complete or system_complete else deepcopy(previous.get('state',{}))
             frame.update(session_id=previous["session_id"],
                 version=previous["version"] + (1 if commit_frame else 0),
-                state=(dict(base_state,view=base_state.get('view','ai_driven') if navigation_complete or not progress['tools'] else 'agent_workspace',
+                state=(dict(base_state,view='local_computer' if system_complete else base_state.get('view','ai_driven') if navigation_complete or not progress['tools'] else 'agent_workspace',
                     messages=base_state.get('messages',[]) if navigation_complete else (previous["state"].get("messages", []) + ([{"role": "user", "text": event["text"]}] if event.get("text") else []))[-12:],
                     notice=progress.get("warning") or progress["answer"]) if commit_frame else deepcopy(previous["state"])),
                 last_event=(dict(event, label="Agent：" + (plan["intent"] if plan else "请检查执行记录"))
