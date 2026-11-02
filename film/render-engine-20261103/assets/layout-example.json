@@ -1,0 +1,85 @@
+{
+  "screen_type": "设置分类中心",
+  "elements": [
+    {
+      "kind": "text",
+      "bounds": [
+        83,
+        42,
+        173,
+        60
+      ],
+      "text": "Settings"
+    },
+    {
+      "kind": "button",
+      "bounds": [
+        6,
+        68,
+        122,
+        100
+      ],
+      "text": "Wi-Fi"
+    },
+    {
+      "kind": "button",
+      "bounds": [
+        134,
+        68,
+        250,
+        100
+      ],
+      "text": "Sound"
+    },
+    {
+      "kind": "button",
+      "bounds": [
+        6,
+        108,
+        122,
+        140
+      ],
+      "text": "Display"
+    },
+    {
+      "kind": "button",
+      "bounds": [
+        134,
+        108,
+        250,
+        140
+      ],
+      "text": "Bluetooth"
+    },
+    {
+      "kind": "button",
+      "bounds": [
+        6,
+        148,
+        122,
+        180
+      ],
+      "text": "Devices"
+    },
+    {
+      "kind": "button",
+      "bounds": [
+        134,
+        148,
+        250,
+        180
+      ],
+      "text": "About"
+    },
+    {
+      "kind": "text",
+      "bounds": [
+        6,
+        190,
+        78,
+        208
+      ],
+      "text": "Result 1"
+    }
+  ]
+}

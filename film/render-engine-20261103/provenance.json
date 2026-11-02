@@ -1,0 +1,53 @@
+{
+  "assets": [
+    {
+      "id": "settings",
+      "file": "assets/settings.png",
+      "sha256": "3ab8af4b12737d8449124d9a3679eb11a376617954c0b08d9f97cc05befb431f",
+      "width": 256,
+      "height": 256,
+      "kind": "actual HTTP test PNG; not screen recording",
+      "version": "2.14.0-system-settings"
+    },
+    {
+      "id": "chatBefore",
+      "file": "assets/chat-before.png",
+      "sha256": "cb597f8b015ec7774b5481ace50128cd58d3d5d5abf5733513191ed21fe112d0",
+      "width": 256,
+      "height": 256,
+      "kind": "actual API source PNG; not screen recording",
+      "version": "2.11.4-experimental"
+    },
+    {
+      "id": "chatAfter",
+      "file": "assets/chat-after.png",
+      "sha256": "6e618a923f8235d318aad993d90ca5a25faaf088ffe057f6bcf8c78313636501",
+      "width": 256,
+      "height": 256,
+      "kind": "actual API source PNG; not screen recording",
+      "version": "2.11.4-experimental"
+    }
+  ],
+  "edit_regions": [
+    [
+      90,
+      140,
+      240,
+      158
+    ],
+    [
+      90,
+      185,
+      200,
+      203
+    ]
+  ],
+  "animation_only": true,
+  "screen_recording_present": false,
+  "pointer": "Illustrative motion only; actual-input-linked pointer is reserved for the screen-recording cut.",
+  "recording_blocker": "Local browser use is disabled in Work settings. Windows Computer Use could not verify browser URL.",
+  "theme": "AI as a software rendering engine",
+  "timing": "Illustrative animation timing. No speed or native capture claim.",
+  "decoder_diagram": "Illustrative weights/tensor symbols, not recorded GPU activations.",
+  "rendering_scope": "DSH-planned structured layout with trained local neural surface/text decoders. The 109M main PixelFlow is not used for the displayed DSH settings output."
+}

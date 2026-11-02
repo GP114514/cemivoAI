@@ -1,0 +1,9 @@
+AI AS A SOFTWARE RENDERING ENGINE
+
+🧠 AI as a software rendering engine.
+🖱️ CEMIVO turns screen context and intent into the next interface. AI plans the layout; trained neural decoders draw the pixels.
+🎬 40s principle film · open-source research prototype
+🔗 https://github.com/GP114514/cemivoAI
+#AI #GenerativeUI
+
+Status: prepared copy only, not posted. The film is a labelled principle animation with retained actual model PNGs. Native APP recording is still pending.

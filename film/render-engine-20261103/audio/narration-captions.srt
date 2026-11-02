@@ -1,0 +1,28 @@
+1
+00:00:00,120 --> 00:00:02,352
+AI as a software rendering engine.
+
+2
+00:00:03,800 --> 00:00:07,592
+In CEMIVO, the interface itself is generated output.
+
+3
+00:00:08,400 --> 00:00:13,632
+The whole screen, your words, and each click become the next rendering request.
+
+4
+00:00:14,300 --> 00:00:19,508
+DeepSeek plans the layout. Trained neural decoders turn it into pixels.
+
+5
+00:00:20,200 --> 00:00:25,240
+For a small change, update a region. For a new goal, generate a new view.
+
+6
+00:00:27,000 --> 00:00:31,680
+The agent executes the task. Its result becomes the next interface.
+
+7
+00:00:33,400 --> 00:00:37,552
+CEMIVO. Exploring AI as the rendering layer of software.
+

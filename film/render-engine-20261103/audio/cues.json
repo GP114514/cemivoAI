@@ -1,0 +1,50 @@
+{
+  "duration": 40,
+  "cues": [
+    {
+      "at": 0.12,
+      "text": "AI as a software rendering engine.",
+      "file": "audio/voice-00.wav",
+      "duration": 2.232
+    },
+    {
+      "at": 3.8,
+      "text": "In CEMIVO, the interface itself is generated output.",
+      "file": "audio/voice-01.wav",
+      "duration": 3.792
+    },
+    {
+      "at": 8.4,
+      "text": "The whole screen, your words, and each click become the next rendering request.",
+      "file": "audio/voice-02.wav",
+      "duration": 5.232
+    },
+    {
+      "at": 14.3,
+      "text": "DeepSeek plans the layout. Trained neural decoders turn it into pixels.",
+      "file": "audio/voice-03.wav",
+      "duration": 5.208
+    },
+    {
+      "at": 20.2,
+      "text": "For a small change, update a region. For a new goal, generate a new view.",
+      "file": "audio/voice-04.wav",
+      "duration": 5.04
+    },
+    {
+      "at": 27,
+      "text": "The agent executes the task. Its result becomes the next interface.",
+      "file": "audio/voice-05.wav",
+      "duration": 4.68
+    },
+    {
+      "at": 33.4,
+      "text": "CEMIVO. Exploring AI as the rendering layer of software.",
+      "file": "audio/voice-06.wav",
+      "duration": 4.152
+    }
+  ],
+  "music": "Original procedural JavaScript score",
+  "narration": "Microsoft en-US-AndrewNeural; generic synthesized narration",
+  "offline": false
+}

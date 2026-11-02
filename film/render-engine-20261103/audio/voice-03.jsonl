@@ -1,0 +1,11 @@
+{"type": "WordBoundary", "offset": 1020410, "duration": 5229580, "text": "DeepSeek"}
+{"type": "WordBoundary", "offset": 7397910, "duration": 3571250, "text": "plans"}
+{"type": "WordBoundary", "offset": 11097080, "duration": 892910, "text": "the"}
+{"type": "WordBoundary", "offset": 12117500, "duration": 4719580, "text": "layout"}
+{"type": "WordBoundary", "offset": 21045830, "duration": 3188750, "text": "Trained"}
+{"type": "WordBoundary", "offset": 24362080, "duration": 2933750, "text": "neural"}
+{"type": "WordBoundary", "offset": 27423330, "duration": 6887910, "text": "decoders"}
+{"type": "WordBoundary", "offset": 36097080, "duration": 2550830, "text": "turn"}
+{"type": "WordBoundary", "offset": 38775410, "duration": 892910, "text": "it"}
+{"type": "WordBoundary", "offset": 39795830, "duration": 1785830, "text": "into"}
+{"type": "WordBoundary", "offset": 41709160, "duration": 6505000, "text": "pixels"}
