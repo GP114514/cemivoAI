@@ -1,0 +1,41 @@
+{
+  "duration": 30,
+  "cues": [
+    {
+      "at": 0.25,
+      "text": "What if software drew its own interface?",
+      "file": "audio/voice-00.wav",
+      "duration": 2.472
+    },
+    {
+      "at": 4.0,
+      "text": "CEMIVO reads the whole screen, together with where you click.",
+      "file": "audio/voice-01.wav",
+      "duration": 3.768
+    },
+    {
+      "at": 9.2,
+      "text": "DeepSeek interprets your intent. An agent handles the task.",
+      "file": "audio/voice-02.wav",
+      "duration": 4.104
+    },
+    {
+      "at": 14.5,
+      "text": "Then the drawing models update the screen. A local change, or a new view.",
+      "file": "audio/voice-03.wav",
+      "duration": 4.848
+    },
+    {
+      "at": 21.4,
+      "text": "One screen. Shaped by AI. Built around your intent.",
+      "file": "audio/voice-04.wav",
+      "duration": 3.936
+    },
+    {
+      "at": 26.0,
+      "text": "CEMIVO. An open source research prototype.",
+      "file": "audio/voice-05.wav",
+      "duration": 3.264
+    }
+  ]
+}

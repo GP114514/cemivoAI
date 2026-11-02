@@ -1,0 +1,14 @@
+{
+  "file": "CEMIVO-Principle-Animation-EN.mp4",
+  "sha256": "b2d2f3213debd8db2055f704796d8bc16939016f57b4a47fa0d53cc9631c567a",
+  "width": 1080,
+  "height": 1350,
+  "fps": 30,
+  "duration": 30,
+  "kind": "principle_animation",
+  "desktop_screen_recording": false,
+  "simulated_pointer": true,
+  "source_PNGs_unchanged": true,
+  "final_promotional_film": false,
+  "reason": "Live APP screen recording input is still pending."
+}

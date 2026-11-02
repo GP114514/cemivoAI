@@ -1,0 +1,15 @@
+{
+  "name": "cemivoai-screen-driven-film",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Original JavaScript motion design, with a strict separate screen-recording input for the finished film",
+  "license": "MIT",
+  "scripts": {
+    "preview": "node render.cjs --preview",
+    "render:principle": "node render.cjs --principle",
+    "render:film": "node render.cjs --film",
+    "audio": "node make-audio.cjs",
+    "audit": "node audit.cjs"
+  },
+  "dependencies": { "@napi-rs/canvas": "0.1.100" }
+}

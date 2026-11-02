@@ -1,0 +1,6 @@
+node_modules/
+renders/encoded-*.png
+renders/preview-*.png
+recordings/app-screen.mp4
+recordings/recording.json
+*.log

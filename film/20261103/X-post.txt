@@ -1,0 +1,10 @@
+READY-TO-PUBLISH COPY
+
+🖱️ What if software drew its own interface?
+🧠 Click the screen. AI reads the context, an agent acts, and CEMIVO redraws.
+🎬 JS principle animation · research prototype
+🔓 Source + video: https://github.com/GP114514/cemivoAI/tree/main/film/20261103
+What would you try first? #AI
+
+STATUS
+Prepared, not published. This video is a labelled principle animation, not native APP screen recording.

@@ -1,0 +1,24 @@
+1
+00:00:00,250 --> 00:00:02,722
+What if software drew its own interface?
+
+2
+00:00:04,000 --> 00:00:07,768
+CEMIVO reads the whole screen, together with where you click.
+
+3
+00:00:09,200 --> 00:00:13,304
+DeepSeek interprets your intent. An agent handles the task.
+
+4
+00:00:14,500 --> 00:00:19,348
+Then the drawing models update the screen. A local change, or a new view.
+
+5
+00:00:21,400 --> 00:00:25,336
+One screen. Shaped by AI. Built around your intent.
+
+6
+00:00:26,000 --> 00:00:29,264
+CEMIVO. An open source research prototype.
+
