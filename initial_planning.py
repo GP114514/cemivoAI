@@ -32,7 +32,19 @@ Return ONLY one valid JSON object, with exactly these fields and no others:
  "controls":[{"label":"short visible label","purpose":"what this input/button does"}],
  "interaction_rules":["interaction and feedback rule"],
  "agent_tasks":[{"task":"future task, not already performed","tool":"supported function or unsupported"}],
- "initial_prompt":"compact black and white drawing description"}.
+ "initial_prompt":"compact black and white drawing description",
+ "initial_screen":{"title":"exact requested visible title, or empty string",
+   "required_labels":["exact short visible labels explicitly requested on this first page"],
+   "empty_inputs":0,"empty_panels":0}}.
+
+initial_screen is a compact rendering contract for the FIRST page only. Keep an
+explicit requested title and visible button labels verbatim and in the requested
+language. Do not include future-page labels or invented button names here. A
+generic input description is not a required visible label. Count explicitly
+requested empty inputs and empty content/message panels separately, from 0 to 3.
+required_labels has at most 8 distinct strings of <=40 characters. This request
+still executes no business task. The renderer will refuse missing literal labels
+or missing required empty controls instead of silently drawing a different UI.
 
 Use the full requirements to choose a useful first page, its information hierarchy,
 layout, button meanings, input/submit feedback, empty/loading/error states, and state
@@ -106,7 +118,10 @@ def _strings(value, field, count, length):
 
 
 def _validate(value, allow_long_prompt=False):
-    _exact_fields(value, _FIELDS, "初始页面计划")
+    # Old callers may still supply the established eight-field plan. New plans
+    # retain an explicit first-page contract through caption shortening.
+    fields = _FIELDS | {"initial_screen"} if isinstance(value, dict) and "initial_screen" in value else _FIELDS
+    _exact_fields(value, fields, "初始页面计划")
     result = {"name": _text(value["name"], "name", 80),
         "purpose": _text(value["purpose"], "purpose", 600),
         "screen_type": _text(value["screen_type"], "screen_type", 80),
@@ -137,6 +152,18 @@ def _validate(value, allow_long_prompt=False):
     if not allow_long_prompt and len(prompt.encode("utf-8")) > DRAWING_PROMPT_BYTES:
         raise InitialPlanError("初始绘图描述请精简至 120 UTF-8 字节，完整需求保留在应用说明中。", "initial_prompt_too_long")
     result["initial_prompt"] = prompt
+    if "initial_screen" in value:
+        contract=value["initial_screen"]
+        _exact_fields(contract,{"title","required_labels","empty_inputs","empty_panels"},"首屏约束")
+        title=contract["title"]
+        if title!="":title=_text(title,"initial_screen.title",80)
+        labels=_strings(contract["required_labels"],"initial_screen.required_labels",8,40)
+        if len(labels)!=len(set(labels)):
+            raise InitialPlanError("首屏必需文字不能重复。")
+        counts={name:contract[name] for name in ("empty_inputs","empty_panels")}
+        if any(type(n) is not int or not 0<=n<=3 for n in counts.values()):
+            raise InitialPlanError("首屏空白控件数量需要 0–3 的整数。")
+        result["initial_screen"]={"title":title,"required_labels":labels,**counts}
     return result
 
 
@@ -191,6 +218,8 @@ def plan_application(planner, goal):
         "messages": messages}
     content, value = _response(planner.complete(payload, timeout=30))
     plan = _validate(value, allow_long_prompt=True)
+    if getattr(planner,'dsh_backend',None) is not None and 'initial_screen' not in plan:
+        raise InitialPlanError('首屏规划没有返回必需文字和空白控件约束，原图已保留。','initial_contract_missing')
     if len(plan["initial_prompt"].encode("utf-8")) <= DRAWING_PROMPT_BYTES:
         return plan
     messages.extend([{"role": "assistant", "content": content},

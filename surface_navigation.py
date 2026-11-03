@@ -46,7 +46,7 @@ def validate_navigation(value, plan, event=None):
     navigation = value['navigation']
     if not isinstance(plan, dict) or not isinstance(navigation, dict):
         raise _error('导航计划需要有效的 JSON 对象。')
-    if set(navigation) - {'action', 'target_app'}:
+    if set(navigation) - {'action', 'target_app', 'redraw'}:
         raise _error('导航计划含有不支持的字段。')
     action = navigation.get('action')
     if action not in ('home', 'back', 'open_app'):
@@ -59,6 +59,8 @@ def validate_navigation(value, plan, event=None):
         raise _error('这条文字同时要求业务处理，请先由 Agent 执行真实工具，再更新视图。', 'navigation_requires_business', 422)
     target = navigation.get('target_app')
     if action == 'open_app':
+        if 'redraw' in navigation and type(navigation['redraw']) is not bool:
+            raise _error('重新设计页面标记需要布尔值。')
         if (not isinstance(target, str) or not target.strip() or len(target.strip()) > 80 or
                 any(ord(character) < 32 or ord(character) == 127 for character in target)):
             raise _error('打开应用需要简短、明确的应用名称。')
@@ -66,7 +68,10 @@ def validate_navigation(value, plan, event=None):
             target.encode('utf-8')
         except UnicodeError:
             raise _error('应用名称含有无效文字。') from None
-        return {'action': action, 'target_app': target.strip()}
+        return {'action': action, 'target_app': target.strip(),
+            **({'redraw':navigation['redraw']} if 'redraw' in navigation else {})}
+    if 'redraw' in navigation:
+        raise _error('桌面与返回不能重新设计应用。')
     if target not in (None, ''):
         raise _error('返回桌面或上一页不需要另一个应用目标。')
     return {'action': action}
@@ -302,21 +307,30 @@ class NavigationRuntime:
                 name = navigation['target_app']
                 target_key = next((key for key, value in tracking['pages'].items()
                     if key != 'desktop' and value['frame'].get('surface_navigation',{}).get('app_name') == name), None)
-                if target_key is not None:
+                if target_key is not None and not navigation.get('redraw',False):
                     target = tracking['pages'][target_key]
                     output, frame = target['png'], self._clean(target['frame'])
                     restored = True
                     stack = old_stack if old_stack[-1] == target_key else old_stack + [target_key]
                 else:
+                    original_text=event.get('text','') if isinstance(event,dict) else ''
+                    goal=f'打开{name}应用。{plan.get("intent",name)}。页面要求：{plan["next_prompt"]}'
+                    if original_text:goal+='\n用户完整要求（原文）：'+original_text
+                    application_spec=None
+                    if navigation.get('redraw') and original_text and getattr(self.live.planner,'dsh_backend',None) is not None:
+                        from initial_planning import plan_application,InitialPlanError
+                        try:application_spec=plan_application(self.live.planner,original_text)
+                        except InitialPlanError as error:raise _error(str(error),error.code,422) from error
                     output, frame = self.live._draw_page(plan['next_prompt'], previous.get('seed',42), previous.get('steps',8),
-                        f'打开{name}应用。{plan.get("intent",name)}。页面要求：{plan["next_prompt"]}')
+                        goal,**({'application_spec':application_spec} if application_spec is not None else {}))
                     if not frame.get('surface_chrome'):
                         output, frame = self.add_chrome(output, frame)
                     target_key = 'page-' + secrets.token_hex(8)
                     frame['surface_navigation'] = {'page_id':target_key,'page_kind':'app','app_name':name}
                     frame['application'] = {'id':secrets.token_hex(12),'name':name,
-                        'goal':f'打开并使用{name}应用视图。当前 AI 语义：{plan.get("intent",name)}。当前页面绘图描述：{plan["next_prompt"]}',
+                        'goal':goal,
                         'parent_application_id':previous.get('application',{}).get('id')}
+                    if application_spec is not None:frame['application']['spec']=deepcopy(application_spec)
                     stack = old_stack + [target_key]
             # Stage navigation only after every model/decode check succeeded.
             # The caller's later observe confirms its actual frame commit.

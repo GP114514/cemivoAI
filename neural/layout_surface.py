@@ -82,6 +82,26 @@ def validate_layout(value,vocabulary):
     return {'screen_type':category.strip(),'elements':result}
 
 
+def validate_prompt_contract(layout,application_spec):
+    """Check preserved first-page semantics before any pixels are generated."""
+    contract=(application_spec or {}).get('initial_screen')
+    if not isinstance(contract,dict):return None
+    labels=list(contract['required_labels'])
+    title=contract['title']
+    if title and title not in labels:labels.append(title)
+    visible={e['text'] for e in layout['elements']}
+    missing=[label for label in labels if label not in visible]
+    if missing:raise ValueError('Keep these exact required visible texts from the original first-page contract: '+json.dumps(missing,ensure_ascii=False))
+    if title and not any(e['kind']=='text' and e['text']==title for e in layout['elements']):
+        raise ValueError('The exact requested title needs a separate text element: '+title)
+    for field,kind in (('empty_inputs','input'),('empty_panels','panel')):
+        actual=sum(e['kind']==kind and e['text']=='' for e in layout['elements'])
+        if actual<contract[field]:raise ValueError(f'Original first-page contract requires {contract[field]} truly empty {kind} controls; found {actual}. Do not use sample content or put text into them.')
+    return {'required_labels':labels,'empty_inputs':contract['empty_inputs'],
+        'empty_panels':contract['empty_panels'],'layout_contract_passed':True,
+        'scope':'planned_literal_text_and_empty_control_state; not OCR or business success'}
+
+
 def layout_diagnostics(value,vocabulary,error):
     """Report every text-fit failure in one correction, not one per round trip."""
     issues=[str(error)]
@@ -162,7 +182,7 @@ def render_layout(editor,layout):
                 'sample_ms':round((time.perf_counter()-loaded)*1000,2),'total_ms':round((time.perf_counter()-started)*1000,2)}}
 
 
-def draw_page(live,prompt,seed,steps,goal,system_result=None):
+def draw_page(live,prompt,seed,steps,goal,system_result=None,application_spec=None):
     from live_app import LiveError
     from page_quality import check_page
     editor=live.navigation._editor()
@@ -171,6 +191,13 @@ def draw_page(live,prompt,seed,steps,goal,system_result=None):
     def draw(caption,draw_seed,requested_steps):
         context={'goal':goal,'drawing_caption':caption}
         instruction=SYSTEM
+        if application_spec is not None:
+            context['application_spec']=deepcopy(application_spec)
+            instruction+='\nPreserve the complete application_spec and original goal. Its initial_screen, when supplied, is a required FIRST-page contract: exact title and required_labels must be visible unchanged; empty_inputs/empty_panels count truly empty controls. Keep all required labels even during geometry correction. Do not translate, abbreviate or replace a requested literal. No invented sample conversations or entered draft in an explicitly empty input.'
+            contract=application_spec.get('initial_screen',{})
+            required=contract.get('required_labels',[])+([contract['title']] if contract.get('title') else [])
+            missing=sorted({c for label in required for c in label if c!='\n' and c not in editor.text_model.lookup})
+            if missing:raise LiveError('当前神经文字模型尚未训练这些必需字符：'+''.join(missing[:24])+'。请换用已支持的文字；不会擅自替换你的标题。','untrained_glyph',422)
         credential=(system_result or {}).get('credential_request')
         if system_result:
             public_result=deepcopy(system_result)
@@ -207,6 +234,7 @@ def draw_page(live,prompt,seed,steps,goal,system_result=None):
                 except ValueError:
                     from .layout_constraints import fit_layout
                     layout=fit_layout(proposed,editor.text_model.lookup);constrained=True
+                prompt_contract=validate_prompt_contract(layout,application_spec)
                 if system_result and not any(e['kind']=='text' and e['text']==system_result['receipt_label'] for e in layout['elements']):
                     raise ValueError('Include one separate text element with exact actual receipt label: '+system_result['receipt_label'])
                 if system_result and system_result['page']=='settings':
@@ -230,6 +258,9 @@ def draw_page(live,prompt,seed,steps,goal,system_result=None):
         planned=(time.perf_counter()-start)*1000
         png,frame=render_layout(editor,layout)
         frame['neural_layout']['geometry_constraints_applied']=constrained
+        if application_spec is not None:
+            frame['application']={'goal':goal,'spec':deepcopy(application_spec)}
+        if prompt_contract is not None:frame['prompt_requirements']=prompt_contract
         frame.update(prompt=caption,seed=draw_seed,steps=requested_steps)
         if system_result:
             frame['system_state']=deepcopy(system_result['system_state'])

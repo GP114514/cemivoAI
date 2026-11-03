@@ -1,5 +1,7 @@
 # DSH graphical interaction backend
 
+Current update: `2.15.1-prompt-ui` unifies description-based first-screen generation with DSH neural page rendering, retains literal/empty-state requirements, supports explicit redesign without stale page restoration, and adds verified local draft clearing. See [description-based UI generation and measured checks](PROMPT-UI.md).
+
 The `2.14.0-system-settings` source includes a DeepSeek Harness backend. cemivoAI is the image-based interaction surface; DSH interprets the full frame, executes workspace tasks, and supplies authoritative tool receipts. A separate, allowlisted Windows host bridge supplies an internal six-category settings hub, native sound controls, device/display facts and Wi-Fi connection with private in-app password entry. It never launches Windows Settings. See [Local computer integration](LOCAL-COMPUTER.md) for scope and measured limits. The local cemivoAI models still produce the image pixels. This integration does not replace the DSH desktop application or copy its credential store.
 
 ## Setup

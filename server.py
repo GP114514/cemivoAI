@@ -26,7 +26,7 @@ import console_events
 
 ROOT = Path(__file__).resolve().parent
 CHECKPOINTS = ROOT / "neural" / "checkpoints"
-VERSION = "2.14.0-system-settings"
+VERSION = "2.15.1-prompt-ui"
 
 
 @contextmanager

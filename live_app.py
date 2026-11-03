@@ -169,6 +169,7 @@ class DeepSeekPlanner:
             from computer_control import INSTRUCTION
             result+='\n'+INSTRUCTION
         if self.dsh_backend is not None:
+            result+='\nFor an explicit request to design a new interface or replace an app layout, choose global navigation open_app with redraw:true and target_app. It regenerates that page instead of restoring its cached pixels. Normal Home/Back/open-app navigation omits redraw and preserves cached app state. Pure UI design executes no business tool; preserve the full typed requirements and exact requested title/labels.'
             result+='\nBackend is DSH, with real workspace file/shell tools under its own permissions. Set requires_tools:true for actual tasks beyond visual UI changes, including file creation/reading and project work. Planning never executes these tasks.'
             result+='\nFor an explicit workspace task, ONLY route it to the executor: requires_tools:true, should_update:false, update_mode:none, target_type:other, next_prompt:"", brief intent/expected_change/state_summary/scope_reason. Omit geometry, navigation and text_action. Do not solve the task, discuss tool availability or design its result screen here. The separate executor gets the full original input, screenshot and task state, then plans actual feedback after real tools finish.'
             result+='\nWhen rendered_elements are supplied, they record this neural page layout. Use their actual bounds to ground geometry, while checking the full screenshot and current ui_state for intent/content. For text_action input, text_bounds and clearing must fit an input interior with 4px padding; for send, new text must fit a panel interior. Preserve every button/input/panel border. One native line is 18px high. Do not place text over the outline.'
@@ -731,7 +732,7 @@ class DeepSeekPlanner:
                 plan['text_bounds'] = bounds.copy()
             if value.get('clear_input_bounds') is not None:
                 bounds=value['clear_input_bounds']
-                if plan.get('text_action') != 'send' or mode != 'local' or target != 'other':
+                if plan.get('text_action') not in ('send','clear') or mode != 'local' or target != 'other':
                     raise ValueError('clear input needs a local send')
                 if not isinstance(bounds,list) or len(bounds)!=4 or any(type(v) is not int for v in bounds):
                     raise ValueError('invalid clear input coordinates')
@@ -765,6 +766,9 @@ class DeepSeekPlanner:
                     if (not overlap and contains(area,plan.get('text_bounds',area))
                             and all(contains(area,box) for box in state.get('sent_message_bounds',[]))):
                         plan['message_area_bounds']=area.copy()
+            if plan.get('text_action')=='clear':
+                from draft_clear import validate_clear
+                plan['clear_input_bounds']=validate_clear(dict(plan,update_mode=mode,target_type=target),frame,event)
         except (LiveError, StableEditError, ValueError, TypeError, UnicodeError) as error:
             failure=LiveError("AI 的范围选择、编辑区域或目标状态不一致，原图已保留。", "invalid_auto_plan", 502)
             # Diagnostics contain bounded coordinates only, never literal text,
@@ -1142,14 +1146,16 @@ class LiveApp:
             "timings": dict(timings, planner_ms=0), "experimental": True,"generator":"pixel_flow",
             'screen_check':dict(screen_check,repair_attempts=int(rejected is not None),rejected=rejected)}
 
-    def _draw_page(self,prompt,seed,steps,goal,system_result=None):
+    def _draw_page(self,prompt,seed,steps,goal,system_result=None,application_spec=None):
         if getattr(self.planner,'dsh_backend',None) is not None:
             from neural.layout_surface import draw_page
-            return draw_page(self,prompt,seed,steps,goal,system_result=system_result)
+            return draw_page(self,prompt,seed,steps,goal,system_result=system_result,application_spec=application_spec)
         if system_result:
             raise LiveError('本机操作结果已保存；请连接 DSH 以生成可核验的系统画面。','system_drawing_unavailable',503)
         from page_quality import check_page
         png,generated=self._draw(prompt,seed,steps)
+        if application_spec is not None:
+            generated['application']={'goal':goal,'spec':deepcopy(application_spec)}
         return check_page(self.planner,png,generated,prompt,goal,self._draw)
 
     def _draw_toggle(self, original_png, previous, plan, event):
@@ -1239,6 +1245,9 @@ class LiveApp:
         return png,frame
 
     def _draw_region(self, original_png, previous, plan, event):
+        if plan.get('text_action')=='clear':
+            from draft_clear import render_clear
+            return render_clear(self,original_png,previous,plan,event)
         if plan.get('_message_window') is not None:
             return self._draw_message_window(original_png,previous,plan,event)
         from stable_edit import validate_region_plan, compose_region, StableEditError
@@ -1383,10 +1392,11 @@ class LiveApp:
     def create(self, data):
         steps, seed = self._options(data)
         goal = data.get("prompt", "黑白聊天窗口，白底黑线，标题 CEMIVO，发送和附件按钮，输入框和聊天气泡")
-        planned = data.get("plan_initial", False)
+        neural_page=getattr(self.planner,'dsh_backend',None) is not None
+        planned = data.get("plan_initial", neural_page)
         if not isinstance(planned, bool):
             raise LiveError("首屏规划选项需要布尔值。", "invalid_request", 422)
-        verify_initial = data.get("verify_initial", False)
+        verify_initial = data.get("verify_initial", neural_page and planned)
         if not isinstance(verify_initial, bool) or (verify_initial and not planned):
             raise LiveError("首屏检查需要布尔值，并且须同时启用首屏规划。", "invalid_request", 422)
         prompt = None if planned else short_prompt(goal)
@@ -1406,9 +1416,15 @@ class LiveApp:
                 planner_ms = round((time.perf_counter()-plan_start)*1000, 2)
                 prompt = application_spec["initial_prompt"]
             self.stage = "drawing"
-            png, frame = self._draw(prompt, seed, steps)
+            if neural_page:
+                png, frame = self._draw_page(prompt, seed, steps, goal,application_spec=application_spec)
+            else:
+                png, frame = self._draw(prompt, seed, steps)
             initial_review_result, review_ms = None, 0
-            if verify_initial:
+            if neural_page and verify_initial and isinstance(frame.get('page_review'),dict):
+                initial_review_result=deepcopy(frame['page_review'])
+                review_ms=initial_review_result.get('review_ms',0)
+            if verify_initial and not neural_page:
                 from initial_review import review_initial
                 initial_review_result = {"accepted": False, "attempts": 0, "checks": [],
                     "readability": "unknown", "scope": "screen_type_and_main_control_shapes"}
@@ -1450,7 +1466,7 @@ class LiveApp:
                             cumulative_timings[key] = cumulative_timings.get(key, 0) + value
                 frame["timings"].update({key: round(value, 2) for key, value in cumulative_timings.items()})
                 frame["timings"]["initial_review_ms"] = round(review_ms, 2)
-            if self.navigation.status().get('available'):
+            if self.navigation.status().get('available') and not frame.get('surface_chrome'):
                 png, frame = self.navigation.add_chrome(png, frame)
             frame.update(session_id=secrets.token_hex(16), version=1,
                 application={"id": secrets.token_hex(12), "goal": goal},
@@ -1462,7 +1478,7 @@ class LiveApp:
                     'app_name':'','at_home':False,'can_back':False,'source':'neural_generation'}
             if application_spec is not None:
                 frame["application"]["spec"] = application_spec
-                frame["initial_plan"] = {"provider": "DeepSeek", "model": self.planner.public()["model"], "planned": True}
+                frame["initial_plan"] = {"provider": self.planner.public().get('provider','DeepSeek'), "model": self.planner.public()["model"], "planned": True}
                 frame["state"]["notice"] = "已根据完整应用需求规划并生成首屏；按钮语义与后续任务保留在应用说明中。"
                 frame["timings"].update(planner_ms=round(planner_ms + review_ms, 2), initial_planner_ms=planner_ms)
             if initial_review_result is not None:

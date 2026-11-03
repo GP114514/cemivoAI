@@ -9,6 +9,8 @@ For pictured desktop/app navigation add navigation:{action:home|back|open_app,ta
 JSON only: intent,expected_change,state_summary (brief Chinese), should_update:bool,next_prompt (whole next screen <=120 UTF8 bytes), update_mode:local|global|none,target_type:toggle|other|uncertain,scope_reason (<=300 chars),requires_tools:bool. Local: local_edit={kind:region,bounds:[x0,y0,x1,y1]} containing click, or {kind:regions,trigger_bounds:[...],regions:[[...],...]} where trigger contains click and 1..4 effect areas may be elsewhere. Union<=35%, min2px, integer native half-open boxes. Toggle: kind:toggle,bounds tightly enclosing one track (12..64w,6..36h,<=3%), opposite current_state/target_state:on|off; always local, never global. Full PNG first, tight focus second; use measured pixel geometry, don't confuse adjacent controls. Global only for page/layout transitions. No HTML, drawing code, tools or claimed business success in visual planning.
 """
 
+COMPACT_RESPONSE += """\nFor a pictured button whose meaning is to clear ONLY the current input draft, use text_action:clear,input_text:\"\",text_source:draft. Require local/other, requires_tools:false, local_edit:{kind:regions,trigger_bounds:[clicked button],regions:[ui_state.input_bounds]}, and clear_input_bounds exactly ui_state.input_bounds. Omit text_bounds. Preserve messages, all other fields and borders. This action cannot erase a conversation or a file. If there is no actual draft, keep none/at_target rather than inventing content. Interpret the button against the full image and application rules; do not assume every Reset/Clear has the same purpose."""
+
 VISUAL_RESPONSE_INSTRUCTION = """VISIBLE RESPONSE POLICY (current app experience):
 This is an interactive software surface. An ordinary click or submitted input
 should produce the next useful VISIBLE UI state, rather than only answering in
@@ -86,7 +88,12 @@ def response_fields(value):
             raise ValueError('an updated frame cannot declare no change')
         result['no_change_reason'] = value['no_change_reason']
     action = value.get('text_action')
-    if action not in (None, 'none'):
+    if action=='clear':
+        if (value.get('input_text') not in (None,'') or value.get('text_source','draft')!='draft'
+                or value.get('should_update') is not True):
+            raise ValueError('clear needs an empty draft value and visible update')
+        result.update(text_action='clear',input_text='',text_source='draft')
+    elif action not in (None, 'none'):
         text = value.get('input_text')
         if action not in ('input', 'send') or not isinstance(text, str) or not text or len(text) > 500:
             raise ValueError('invalid text action/content')
@@ -113,6 +120,10 @@ def response_needs_revision(plan, event=None, state=None):
         return False
     if plan.get('update_mode')!='local' or plan.get('target_type')!='other':
         return True
+    if plan.get('text_action')=='clear':
+        return not ((state or {}).get('input_text') and (state or {}).get('input_bounds')
+            and plan.get('clear_input_bounds')==(state or {}).get('input_bounds')
+            and plan.get('requires_tools') is False)
     if (event is not None and event.get('input_method')=='contextmenu'
             and plan.get('text_action')=='send' and plan.get('text_source','event')=='event'):
         return True
@@ -170,6 +181,10 @@ def visual_state(previous, plan, rendered=None):
                 visible=state.get('visible_sent_messages',previous.get('sent_messages',[]))
                 state['visible_sent_messages']=visible+[plan['input_text']]
                 state['sent_message_bounds']=(state.get('sent_message_bounds',[])+[rendered['text_bounds']])[-24:]
+            state.pop('input_bounds',None)
+    elif plan.get('text_action')=='clear':
+        if rendered and rendered.get('draft_cleared') is True and rendered.get('preview') is not True:
+            state['input_text']=''
             state.pop('input_bounds',None)
     return state
 

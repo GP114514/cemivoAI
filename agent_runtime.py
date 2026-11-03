@@ -442,6 +442,7 @@ class AgentRuntime:
                                 png, generated = self.live._draw_region(png, previous, plan, event)
                         else:
                             goal=f'本次操作：{plan["intent"]}。目标画面：{plan["next_prompt"]}。变化：{plan["expected_change"]}'
+                            if event.get('text'):goal+='\n用户完整要求（原文）：'+event['text']
                             if plan.get('system_result'):
                                 png,generated=self.live._draw_page(plan['next_prompt'],previous['seed'],previous['steps'],goal,
                                     system_result=plan['system_result'])
