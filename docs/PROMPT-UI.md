@@ -1,5 +1,7 @@
 # Generate an interface from a description
 
+Latest: [`2.16.0-stateful-ui`](STATEFUL-UI.md) adds content-preserving layout revisions, nested input-action compatibility and bounded native Send effects, verified with actual generated PNGs and follow-up interactions.
+
 `2.15.1-prompt-ui` connects first-screen creation and explicit interface redesign to the same DSH layout + locally trained neural pixel-decoder path used by DSH navigation.
 
 In the minimal APP, right-click the image, describe the interface, and submit. For example:

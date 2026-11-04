@@ -170,6 +170,7 @@ class DeepSeekPlanner:
             result+='\n'+INSTRUCTION
         if self.dsh_backend is not None:
             result+='\nFor an explicit request to design a new interface or replace an app layout, choose global navigation open_app with redraw:true and target_app. It regenerates that page instead of restoring its cached pixels. Normal Home/Back/open-app navigation omits redraw and preserves cached app state. Pure UI design executes no business tool; preserve the full typed requirements and exact requested title/labels.'
+            result+='\nFor redesigning the CURRENT app while keeping its existing messages, draft or other entered content, add preserve_state:true inside navigation alongside redraw:true. Choose this for styling, layout or button-label revisions. A redraw of a populated app MUST explicitly choose preserve_state true or false; false is only for an explicit fresh/empty app or discard-content request. Do not add text_action to a redesign. The host binds committed content to the newly AI-chosen input/panel geometry; it never transcribes user values through the planner. preserve_state is only for ordinary app pages, never private/password or local computer pages.'
             result+='\nBackend is DSH, with real workspace file/shell tools under its own permissions. Set requires_tools:true for actual tasks beyond visual UI changes, including file creation/reading and project work. Planning never executes these tasks.'
             result+='\nFor an explicit workspace task, ONLY route it to the executor: requires_tools:true, should_update:false, update_mode:none, target_type:other, next_prompt:"", brief intent/expected_change/state_summary/scope_reason. Omit geometry, navigation and text_action. Do not solve the task, discuss tool availability or design its result screen here. The separate executor gets the full original input, screenshot and task state, then plans actual feedback after real tools finish.'
             result+='\nWhen rendered_elements are supplied, they record this neural page layout. Use their actual bounds to ground geometry, while checking the full screenshot and current ui_state for intent/content. For text_action input, text_bounds and clearing must fit an input interior with 4px padding; for send, new text must fit a panel interior. Preserve every button/input/panel border. One native line is 18px high. Do not place text over the outline.'
@@ -474,7 +475,11 @@ class DeepSeekPlanner:
             raise LiveError("DeepSeek 响应格式不正确，当前画面已保留。", "planner_response", 502) from None
 
     def _toggle_vision(self, instruction, context, images):
-        return self._vision_json(instruction,context,images,stage='ui_planning')
+        from interaction_policy import normalize_text_action
+        value=self._vision_json(instruction,context,images,stage='ui_planning')
+        try:return normalize_text_action(value)
+        except ValueError as error:
+            raise LiveError('AI 返回了冲突或不完整的输入动作，当前画面已保留。','invalid_toggle_plan',502) from error
 
     def _vision_json(self,instruction,context,images,stage):
         content = [{"type": "text", "text": json.dumps(context, ensure_ascii=False)}]
@@ -560,7 +565,7 @@ class DeepSeekPlanner:
             self._vision_stage('refining')
             corrected=self._toggle_vision(self._auto_instruction(),
                 dict(context, invalid_plan=value,validation_error=str(error.__cause__ or error),
-                    correction_request='只读校正原计划的坐标字段：保留原text_action、input_text、text_source和requires_tools，不得把输入草稿改成发送。trigger_bounds必须是包含原点击的四个整数[x0,y0,x1,y1]，变化区域可在点击之外，合计<=35%。开关仅原轨道内。输入/发送原文必须逐字保留。不得执行工具。'),[png]+focus_images)
+                    correction_request='只读校正原计划的格式与坐标：保留原text_action、input_text、text_source和requires_tools，不得把输入草稿改成发送。重设计有内容的界面必须在navigation内明确preserve_state布尔值，默认保留内容，只有用户明确丢弃才false。trigger_bounds必须是包含原点击的四个整数[x0,y0,x1,y1]，变化区域可在点击之外，合计<=35%。开关仅原轨道内。输入/发送原文必须逐字保留。不得执行工具。'),[png]+focus_images)
             corrected=compact_plan_prompt(self,corrected)
             if value.get('text_action') in ('input','send') and any(corrected.get(key)!=value.get(key)
                     for key in ('text_action','input_text','text_source','requires_tools')):
@@ -652,6 +657,8 @@ class DeepSeekPlanner:
     def validate_auto_plan(cls, value, frame, event, model="deepseek-flash"):
         from stable_edit import validate_toggle_plan, validate_region_plan, StableEditError
         try:
+            from neural.layout_surface import compile_send_effects
+            value=compile_send_effects(value,frame)
             plan = cls.validate_plan(value)
             mode, target = value.get("update_mode"), value.get("target_type")
             reason = value.get("scope_reason")
@@ -711,9 +718,10 @@ class DeepSeekPlanner:
                 plan['empty_hint_present']=value['empty_hint_present']
                 if isinstance(value.get('empty_hint_evidence'),dict):
                     plan['empty_hint_evidence']=deepcopy(value['empty_hint_evidence'])
-            from surface_navigation import validate_navigation
+            from surface_navigation import validate_navigation,validate_redesign_state
             navigation = validate_navigation(value, plan, event)
             if navigation is not None:
+                validate_redesign_state(navigation,frame)
                 plan['navigation'] = navigation
             if value.get('text_bounds') is not None:
                 bounds = value['text_bounds']
@@ -1146,10 +1154,12 @@ class LiveApp:
             "timings": dict(timings, planner_ms=0), "experimental": True,"generator":"pixel_flow",
             'screen_check':dict(screen_check,repair_attempts=int(rejected is not None),rejected=rejected)}
 
-    def _draw_page(self,prompt,seed,steps,goal,system_result=None,application_spec=None):
+    def _draw_page(self,prompt,seed,steps,goal,system_result=None,application_spec=None,state_transfer=None):
         if getattr(self.planner,'dsh_backend',None) is not None:
             from neural.layout_surface import draw_page
-            return draw_page(self,prompt,seed,steps,goal,system_result=system_result,application_spec=application_spec)
+            return draw_page(self,prompt,seed,steps,goal,system_result=system_result,application_spec=application_spec,state_transfer=state_transfer)
+        if state_transfer is not None:
+            raise LiveError('保留内容的界面重设计需要 DSH 布局模式，原图已保留。','state_transfer_unavailable',422)
         if system_result:
             raise LiveError('本机操作结果已保存；请连接 DSH 以生成可核验的系统画面。','system_drawing_unavailable',503)
         from page_quality import check_page

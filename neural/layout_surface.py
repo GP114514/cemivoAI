@@ -61,7 +61,7 @@ def validate_layout(value,vocabulary):
             raise ValueError('bounds must be four native integers')
         x0,y0,x1,y1=box
         if not(6<=x0<x1<=250 and 36<=y0<y1<=250):raise ValueError('element crosses canvas or reserved navigation band')
-        if not isinstance(text,str) or len(text)>80 or any(ord(c)<32 and c!='\n' for c in text):
+        if not isinstance(text,str) or len(text)>(500 if kind in ('input','panel') else 80) or any(ord(c)<32 and c!='\n' for c in text):
             raise ValueError('invalid visible text')
         if kind=='text' and not text.strip():raise ValueError('text elements cannot be empty')
         padding=0 if kind=='text' else 4
@@ -134,6 +134,43 @@ def text_interior(frame,action,bounds):
     raise ValueError('text_bounds must stay inside a rendered '+kind+' interior: '+json.dumps(interiors))
 
 
+def compile_send_effects(value,frame):
+    """Narrow AI-chosen Send effects to the actual native text operations.
+
+    No control/intent is selected here. Every resulting box stays inside an
+    existing AI effect and the rendered field. Ordinary local validation and
+    fresh visual verification still apply. Invalid/ambiguous plans stay invalid.
+    """
+    if (frame.get('generator')!='dsh_layout_neural_surface' or not isinstance(value,dict) or
+            value.get('text_action')!='send' or value.get('requires_tools') is not False or
+            value.get('update_mode')!='local' or value.get('target_type')!='other'):
+        return value
+    try:
+        from .text_editor import TextEditor
+        from behavior_regions import contains
+        edit=value['local_edit'];regions=edit['regions'];requested=value['text_bounds']
+        if edit.get('kind')!='regions' or not 1<=len(regions)<=4:return value
+        boxes=[requested]+regions
+        if any(not isinstance(b,list) or len(b)!=4 or any(type(n) is not int for n in b) or
+                not 0<=b[0]<b[2]<=frame['width'] or not 0<=b[1]<b[3]<=frame['height'] for b in boxes):return value
+        inner=text_interior(frame,'send',requested)
+        area=next(b for b in regions if contains(b,requested))
+        outer=[max(inner[0],area[0]),max(inner[1],area[1]),min(inner[2],area[2]),min(inner[3],area[3])]
+        text=value['input_text']
+        if not isinstance(text,str) or not text or len(text)>500:return value
+        fitted=TextEditor.fit_bounds(text,requested,outer)
+        draft=frame.get('state',{}).get('input_bounds')
+        if not draft or value.get('clear_input_bounds')!=draft:return value
+        text_interior(frame,'input',draft)
+        effects=[fitted,draft.copy()]
+        if value.get('clear_placeholder_bounds') is not None:effects.append(value['clear_placeholder_bounds'])
+        if any(not any(contains(b,effect) for b in regions) for effect in effects):return value
+        result=deepcopy(value);result['text_bounds']=fitted
+        result['local_edit']['regions']=effects
+        return result
+    except (ValueError,TypeError,KeyError,StopIteration,IndexError):return value
+
+
 def verify_borders(before_png,after_png,frame):
     if frame.get('generator')!='dsh_layout_neural_surface':return
     import numpy as np
@@ -145,6 +182,16 @@ def verify_borders(before_png,after_png,frame):
                 (before[y0,x0:x1],after[y0,x0:x1]),(before[y1-1,x0:x1],after[y1-1,x0:x1]),
                 (before[y0:y1,x0],after[y0:y1,x0]),(before[y0:y1,x1-1],after[y0:y1,x1-1]))):
             raise ValueError('text edit changed a rendered control border')
+
+
+def text_placement(item):
+    """Native text origin/extent shared by rendering and state migration."""
+    text=item['text'];x0,y0,x1,y1=item['bounds'];padding=0 if item['kind']=='text' else 4
+    width=x1-x0-2*padding;height=y1-y0-2*padding
+    advance=sum(character_advance(c) for c in text) if '\n' not in text else width+1
+    if advance<=width:
+        return x0+padding+(width-advance)//2,y0+padding+(height-18)//2,advance,18
+    return x0+padding,y0+padding,width,height
 
 
 def render_layout(editor,layout):
@@ -159,15 +206,8 @@ def render_layout(editor,layout):
         for item in layout['elements']:
             text=item['text']
             if not text:continue
-            x0,y0,x1,y1=item['bounds'];padding=0 if item['kind']=='text' else 4
-            inner_width=x1-x0-2*padding;inner_height=y1-y0-2*padding
-            width=sum(character_advance(c) for c in text) if '\n' not in text else inner_width+1
-            if width<=inner_width:
-                left=x0+padding+(inner_width-width)//2;top=y0+padding+(inner_height-18)//2
-                image=editor.text_model.predict_text(text,width,18)
-            else:
-                left=x0+padding;top=y0+padding
-                image=editor.text_model.predict_text(text,inner_width,inner_height)
+            left,top,width,height=text_placement(item)
+            image=editor.text_model.predict_text(text,width,height)
             pixels[top:top+image.shape[0],left:left+image.shape[1]]=image
         output=BytesIO();Image.fromarray(pixels).save(output,format='PNG',compress_level=2)
         png=output.getvalue();status=editor.status()
@@ -182,7 +222,7 @@ def render_layout(editor,layout):
                 'sample_ms':round((time.perf_counter()-loaded)*1000,2),'total_ms':round((time.perf_counter()-started)*1000,2)}}
 
 
-def draw_page(live,prompt,seed,steps,goal,system_result=None,application_spec=None):
+def draw_page(live,prompt,seed,steps,goal,system_result=None,application_spec=None,state_transfer=None):
     from live_app import LiveError
     from page_quality import check_page
     editor=live.navigation._editor()
@@ -191,6 +231,10 @@ def draw_page(live,prompt,seed,steps,goal,system_result=None,application_spec=No
     def draw(caption,draw_seed,requested_steps):
         context={'goal':goal,'drawing_caption':caption}
         instruction=SYSTEM
+        if state_transfer is not None:
+            from ui_state_transfer import planning_context
+            context['retained_ui']=planning_context(state_transfer)
+            instruction+='\nThis is a CONTENT-PRESERVING REDESIGN of the attached complete previous screenshot. Return screen_type,elements AND state_bindings:[{"source":OLD_INDEX,"target":NEW_INDEX}]. Bind EVERY retained_fields source index to exactly one new element of the SAME kind (input or panel). Give these new elements text:""; the host injects exact committed content BEFORE geometry/text-fit validation. Allocate enough native space for those exact values including wrapped messages. Keep the requested new title and button labels. Never invent, retype, send, clear or discard retained content. New fields may be empty only. Original empty-state requirements describe the old first launch; current retained values take precedence in this revision.'
         if application_spec is not None:
             context['application_spec']=deepcopy(application_spec)
             instruction+='\nPreserve the complete application_spec and original goal. Its initial_screen, when supplied, is a required FIRST-page contract: exact title and required_labels must be visible unchanged; empty_inputs/empty_panels count truly empty controls. Keep all required labels even during geometry correction. Do not translate, abbreviate or replace a requested literal. No invented sample conversations or entered draft in an explicitly empty input.'
@@ -223,11 +267,18 @@ def draw_page(live,prompt,seed,steps,goal,system_result=None,application_spec=No
         messages=[{'role':'system','content':instruction},{'role':'user','content':json.dumps(context,ensure_ascii=False)}]
         start=time.perf_counter()
         for attempt in range(2):
-            response=live.planner.complete({'messages':messages,'response_format':{'type':'json_object'}},60)
-            raw=response['choices'][0]['message']['content']
+            if state_transfer is not None:
+                proposed=live.planner._toggle_vision(instruction,context,[state_transfer['png']])
+                raw=json.dumps(proposed,ensure_ascii=False)
+            else:
+                response=live.planner.complete({'messages':messages,'response_format':{'type':'json_object'}},60)
+                raw=response['choices'][0]['message']['content']
             proposed=None
             try:
                 proposed=json.loads(raw)
+                if state_transfer is not None:
+                    from ui_state_transfer import bind
+                    proposed,state_bindings=bind(proposed,state_transfer)
                 bindings=proposed.pop('private_input',None) if isinstance(proposed,dict) and credential else None
                 constrained=False
                 try:layout=validate_layout(proposed,editor.text_model.lookup)
@@ -255,12 +306,20 @@ def draw_page(live,prompt,seed,steps,goal,system_result=None,application_spec=No
                 messages.extend([{'role':'assistant','content':raw},{'role':'user','content':
                     'Correct ALL layout errors together while keeping the original goal. '+
                     layout_diagnostics(proposed,editor.text_model.lookup,error)}])
+                if state_transfer is not None:
+                    context['invalid_candidate']=json.loads(raw)
+                    context['correction']=layout_diagnostics(proposed,editor.text_model.lookup,error)
         planned=(time.perf_counter()-start)*1000
         png,frame=render_layout(editor,layout)
         frame['neural_layout']['geometry_constraints_applied']=constrained
         if application_spec is not None:
             frame['application']={'goal':goal,'spec':deepcopy(application_spec)}
         if prompt_contract is not None:frame['prompt_requirements']=prompt_contract
+        if state_transfer is not None:
+            from ui_state_transfer import restore
+            try:frame['state'],frame['state_transfer']=restore(state_transfer,layout,state_bindings,editor.text_model.lookup)
+            except ValueError as error:
+                raise LiveError('无法完整迁移原内容与位置，原画面已保留。','state_transfer_invalid',422) from error
         frame.update(prompt=caption,seed=draw_seed,steps=requested_steps)
         if system_result:
             frame['system_state']=deepcopy(system_result['system_state'])

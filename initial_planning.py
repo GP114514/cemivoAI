@@ -202,7 +202,7 @@ def _response(response):
         raise InitialPlanError("初始页面计划不是完整、有效的 JSON 对象。") from None
 
 
-def plan_application(planner, goal):
+def plan_application(planner, goal,retained_ui=None):
     """Return a strictly validated plan; only an overlong prompt gets one repair.
 
     Network/authentication failures from planner.complete propagate unchanged.
@@ -211,8 +211,12 @@ def plan_application(planner, goal):
     _text(goal, "初始需求", 2000, "invalid_initial_goal")
     if len(goal.encode("utf-8")) > 6000:
         raise InitialPlanError("初始需求请控制在 6000 UTF-8 字节以内。", "invalid_initial_goal")
-    messages = [{"role": "system", "content": SYSTEM_INITIAL},
-        {"role": "user", "content": json.dumps({"original_goal": goal}, ensure_ascii=False)}]
+    instruction=SYSTEM_INITIAL;context={"original_goal":goal}
+    if retained_ui is not None:
+        context['retained_ui']=retained_ui
+        instruction+='\nThis request REVISES the current app, preserving the supplied committed field values. Use previous_application to understand unchanged purpose/rules, but apply current requested label/layout changes. initial_screen describes the NEW CURRENT page, not a fresh empty launch. Do not require an empty input/panel that contains retained text. No content may be sent, cleared or replaced in this planning request.'
+    messages = [{"role": "system", "content": instruction},
+        {"role": "user", "content": json.dumps(context, ensure_ascii=False)}]
     payload = {"thinking": {"type": "disabled"}, "temperature": 0.2,
         "stream": False, "max_tokens": 1400, "response_format": {"type": "json_object"},
         "messages": messages}

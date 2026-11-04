@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 import hashlib
 import json
-from neural.layout_surface import validate_layout,text_interior,verify_borders,draw_page,layout_diagnostics
+from neural.layout_surface import validate_layout,text_interior,verify_borders,draw_page,layout_diagnostics,compile_send_effects
 from neural.layout_constraints import fit_layout
 
 
@@ -70,6 +70,24 @@ class NeuralLayoutTests(unittest.TestCase):
         for bounds in ([13,198,121,216],[180,184,240,202]):
             with self.subTest(bounds=bounds),self.assertRaises(ValueError):text_interior(frame,'input',bounds)
         self.assertEqual(text_interior(frame,'send',[12,64,120,82]),[12,64,244,168])
+
+    def test_send_compiles_only_ai_chosen_text_effects_inside_original_regions(self):
+        frame={'generator':'dsh_layout_neural_surface','neural_layout':self.layout,'width':256,'height':256,
+            'state':{'input_bounds':[12,184,120,202]}}
+        plan={'text_action':'send','requires_tools':False,'update_mode':'local','target_type':'other',
+            'input_text':'Hello NOVA','text_bounds':[12,64,88,82],'clear_input_bounds':[12,184,120,202],
+            'local_edit':{'kind':'regions','trigger_bounds':[176,180,248,212],
+                'regions':[[8,60,248,172],[12,184,120,202]]}}
+        saved=deepcopy(plan);compiled=compile_send_effects(plan,frame)
+        self.assertEqual(plan,saved)
+        self.assertEqual(compiled['text_bounds'],[12,64,102,82])
+        self.assertEqual(compiled['local_edit']['regions'],[[12,64,102,82],[12,184,120,202]])
+        self.assertEqual(compiled['local_edit']['trigger_bounds'],plan['local_edit']['trigger_bounds'])
+        # A wrong field, lost draft or insufficient AI effect cannot grow/move.
+        for change in ({'text_bounds':[12,184,88,202]}, {'clear_input_bounds':[12,184,88,202]},
+                {'local_edit':dict(plan['local_edit'],regions=[[12,64,88,82],[12,184,120,202]])}):
+            value=dict(plan,**change)
+            self.assertEqual(compile_send_effects(value,frame),value)
 
     def test_border_comparison_rejects_a_changed_outline(self):
         def png(pixels):

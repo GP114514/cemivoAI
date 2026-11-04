@@ -20,7 +20,7 @@ def fit_layout(value,vocabulary):
         if not isinstance(element,dict) or set(element)!={'kind','bounds','text'}:
             raise ValueError('invalid element schema')
         kind=element['kind'];text=element['text'];bounds=element['bounds']
-        if kind not in ('text','button','input','panel') or not isinstance(text,str) or len(text)>80:
+        if kind not in ('text','button','input','panel') or not isinstance(text,str) or len(text)>(500 if kind in ('input','panel') else 80):
             raise ValueError('unsupported AI element')
         if (any(c not in vocabulary for c in text if c!='\n') or any(ord(c)<32 and c!='\n' for c in text)
                 or (kind=='text' and not text.strip())):raise ValueError('untrained or empty text')

@@ -74,6 +74,27 @@ visible, never because the feature is missing or validation has not been shown.
 """
 
 
+def normalize_text_action(value):
+    """Flatten an equivalent provider envelope; never infer or change intent.
+
+    Both forms go through the same literal, geometry and pixel validation.
+    Conflicting copies are rejected instead of choosing a more permissive one.
+    """
+    from copy import deepcopy
+    if not isinstance(value,dict) or not isinstance(value.get('text_action'),dict):return value
+    nested=value['text_action']
+    if (not nested or 'action' not in nested or
+            set(nested)-{'action','input_text','text_source','text_bounds','clear_input_bounds'}):
+        raise ValueError('unsupported nested text action')
+    result=deepcopy(value);result['text_action']=nested['action']
+    for key,item in nested.items():
+        if key=='action':continue
+        if key in value and (type(value[key]) is not type(item) or value[key]!=item):
+            raise ValueError('conflicting nested text action')
+        result[key]=deepcopy(item)
+    return result
+
+
 def response_fields(value):
     """Validate optional interaction semantics without changing model pixels."""
     result = {}

@@ -46,7 +46,7 @@ def validate_navigation(value, plan, event=None):
     navigation = value['navigation']
     if not isinstance(plan, dict) or not isinstance(navigation, dict):
         raise _error('导航计划需要有效的 JSON 对象。')
-    if set(navigation) - {'action', 'target_app', 'redraw'}:
+    if set(navigation) - {'action', 'target_app', 'redraw','preserve_state'}:
         raise _error('导航计划含有不支持的字段。')
     action = navigation.get('action')
     if action not in ('home', 'back', 'open_app'):
@@ -61,6 +61,8 @@ def validate_navigation(value, plan, event=None):
     if action == 'open_app':
         if 'redraw' in navigation and type(navigation['redraw']) is not bool:
             raise _error('重新设计页面标记需要布尔值。')
+        if 'preserve_state' in navigation and (type(navigation['preserve_state']) is not bool or navigation.get('redraw') is not True):
+            raise _error('保留内容标记需要布尔值，而且必须同时重新设计页面。')
         if (not isinstance(target, str) or not target.strip() or len(target.strip()) > 80 or
                 any(ord(character) < 32 or ord(character) == 127 for character in target)):
             raise _error('打开应用需要简短、明确的应用名称。')
@@ -69,12 +71,22 @@ def validate_navigation(value, plan, event=None):
         except UnicodeError:
             raise _error('应用名称含有无效文字。') from None
         return {'action': action, 'target_app': target.strip(),
-            **({'redraw':navigation['redraw']} if 'redraw' in navigation else {})}
-    if 'redraw' in navigation:
+            **({key:navigation[key] for key in ('redraw','preserve_state') if key in navigation})}
+    if 'redraw' in navigation or 'preserve_state' in navigation:
         raise _error('桌面与返回不能重新设计应用。')
     if target not in (None, ''):
         raise _error('返回桌面或上一页不需要另一个应用目标。')
     return {'action': action}
+
+
+def validate_redesign_state(navigation,frame):
+    """A redraw of a populated app needs an explicit AI retention decision."""
+    state=frame.get('state',{})
+    if (navigation and navigation.get('redraw') is True and
+            frame.get('generator')=='dsh_layout_neural_surface' and not frame.get('system_page') and
+            (state.get('input_text') or state.get('sent_messages')) and 'preserve_state' not in navigation):
+        raise _error('当前界面有内容；重设计必须明确 preserve_state:true 保留内容，只有用户明确要求空白新页面或丢弃内容才选择 false。',
+            'redesign_state_required')
 
 
 def _pixels(png):
@@ -279,6 +291,7 @@ class NavigationRuntime:
         navigation = validate_navigation(plan, plan, event)
         if navigation is None:
             raise _error('本次计划未声明有效导航。')
+        validate_redesign_state(navigation,previous)
         with self.lock:
             self.ensure_tracking(previous)
             tracking = deepcopy(self.sessions[previous['session_id']])
@@ -317,12 +330,20 @@ class NavigationRuntime:
                     goal=f'打开{name}应用。{plan.get("intent",name)}。页面要求：{plan["next_prompt"]}'
                     if original_text:goal+='\n用户完整要求（原文）：'+original_text
                     application_spec=None
+                    state_transfer=None
+                    if navigation.get('preserve_state'):
+                        from ui_state_transfer import capture,planning_context
+                        try:state_transfer=capture(previous,png)
+                        except (ValueError,KeyError,TypeError) as error:
+                            raise _error('原内容与画面无法完整对应，已保留当前页面。','state_transfer_invalid') from error
                     if navigation.get('redraw') and original_text and getattr(self.live.planner,'dsh_backend',None) is not None:
                         from initial_planning import plan_application,InitialPlanError
-                        try:application_spec=plan_application(self.live.planner,original_text)
+                        try:application_spec=plan_application(self.live.planner,original_text,
+                            **({'retained_ui':planning_context(state_transfer)} if state_transfer is not None else {}))
                         except InitialPlanError as error:raise _error(str(error),error.code,422) from error
                     output, frame = self.live._draw_page(plan['next_prompt'], previous.get('seed',42), previous.get('steps',8),
-                        goal,**({'application_spec':application_spec} if application_spec is not None else {}))
+                        goal,**({'application_spec':application_spec} if application_spec is not None else {}),
+                        **({'state_transfer':state_transfer} if state_transfer is not None else {}))
                     if not frame.get('surface_chrome'):
                         output, frame = self.add_chrome(output, frame)
                     target_key = 'page-' + secrets.token_hex(8)
